@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -74,27 +75,22 @@ export default function HomePage() {
     }
   ];
 
-  const testimonials = [
+  // Testimonials will be added once we have real beta user feedback
+  const betaFeatures = [
     {
-      quote: "I used to forget 90% of the decisions I made. Now I have a searchable record that helped me secure a Staff Engineer promotion.",
-      name: "Alex Chen",
-      role: "Staff Engineer",
-      company: "Tech Startup",
-      avatar: "AC"
+      icon: '🎯',
+      title: 'Decision Logging',
+      description: 'Capture your professional decisions with AI-powered structuring'
     },
     {
-      quote: "The AI structuring is magic. I just ramble about what happened and it turns into a professional decision log entry.",
-      name: "Sarah Miller",
-      role: "Engineering Manager",
-      company: "Fortune 500",
-      avatar: "SM"
+      icon: '📊',
+      title: 'Promotion Packages',
+      description: 'Generate polished self-review documents for performance reviews'
     },
     {
-      quote: "Finally, a tool that understands that my job is about the decisions I make, not just the code I ship.",
-      name: "James Park",
-      role: "Senior Developer",
-      company: "Fintech",
-      avatar: "JP"
+      icon: '🔒',
+      title: 'Your Data, Your Control',
+      description: 'Export everything, delete anytime. Privacy-first architecture'
     }
   ];
 
@@ -113,7 +109,7 @@ export default function HomePage() {
     },
     {
       question: "Is it really free?",
-      answer: "Yes, during our beta period everything is free including AI features. After beta, basic features will remain free. Premium features like unlimited AI generations will be $5/month."
+      answer: "Yes, during our beta period everything is free including AI features. After beta, basic features will remain free. Premium features like unlimited AI generations will be ₹500/month."
     },
     {
       question: "Can I share my decisions with my manager?",
@@ -148,19 +144,57 @@ export default function HomePage() {
               <a href="#faq" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">FAQ</a>
             </div>
 
-            <div className="flex gap-3">
-              <Link href="/auth/login">
+            <div className="flex items-center gap-3">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 text-slate-400 hover:text-white"
+                aria-label="Toggle menu"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {mobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
+              <Link href="/auth/login" className="hidden sm:block">
                 <Button variant="ghost" className="text-slate-300 hover:text-white hover:bg-white/5">
                   Sign In
                 </Button>
               </Link>
-              <Link href="/auth/signup">
+              <Link href="/auth/signup" className="hidden sm:block">
                 <Button className="bg-white text-slate-900 hover:bg-slate-100 font-semibold px-5 shadow-xl shadow-white/10 transition-all hover:scale-105 active:scale-95">
                   Get Started Free
                 </Button>
               </Link>
             </div>
           </div>
+
+          {/* Mobile menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-white/5 py-4 space-y-4">
+              <div className="flex flex-col gap-2">
+                <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">Features</a>
+                <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">How it Works</a>
+                <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">Pricing</a>
+                <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">FAQ</a>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Link href="/auth/login" className="flex-1">
+                  <Button variant="ghost" className="w-full text-slate-300 hover:text-white hover:bg-white/5">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth/signup" className="flex-1">
+                  <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 font-semibold">
+                    Get Started
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -380,67 +414,51 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Beta Announcement Section */}
       <section className="py-24">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-outfit">
-            Trusted by engineers who lead
-          </h2>
-          <p className="text-slate-400 mb-12">Join thousands of professionals documenting their career journey</p>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
-            {[
-              { value: '10,000+', label: 'Decisions Logged' },
-              { value: '2,500+', label: 'Active Users' },
-              { value: '850+', label: 'Promotions Secured' },
-              { value: '50hrs', label: 'Saved Per Year' },
-            ].map((stat, idx) => (
-              <div key={idx} className="p-6 bg-slate-900/30 rounded-2xl border border-white/5">
-                <div className="text-4xl md:text-5xl font-bold text-white mb-2 font-outfit bg-gradient-to-r from-indigo-400 to-violet-400 text-transparent bg-clip-text">
-                  {stat.value}
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="bg-gradient-to-r from-indigo-950/50 to-violet-950/50 backdrop-blur-md rounded-3xl p-12 border border-indigo-500/20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm font-medium mb-6">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Now in Public Beta
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-outfit">
+              Be an Early Adopter
+            </h2>
+            <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
+              We're actively building Career Black Box with feedback from engineers like you.
+              Join our beta to get free access to all features and help shape the product.
+            </p>
+            <div className="grid md:grid-cols-3 gap-6">
+              {betaFeatures.map((feature, idx) => (
+                <div key={idx} className="p-6 bg-white/5 rounded-xl border border-white/5">
+                  <div className="text-3xl mb-3">{feature.icon}</div>
+                  <h3 className="text-white font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-slate-400 text-sm">{feature.description}</p>
                 </div>
-                <div className="text-slate-500 font-medium">{stat.label}</div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* User Feedback Section */}
       <section className="py-24 border-y border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 font-outfit">
-              Loved by engineers
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-pink-400"> worldwide</span>
+              Share Your
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-pink-400"> Experience</span>
             </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, idx) => (
-              <div key={idx} className="bg-slate-900/40 backdrop-blur rounded-2xl p-8 border border-white/5 hover:border-white/10 transition-all">
-                {/* Stars */}
-                <div className="flex gap-1 mb-4">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <svg key={star} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-
-                <p className="text-slate-300 mb-6 leading-relaxed italic">"{testimonial.quote}"</p>
-
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <div className="text-white font-semibold">{testimonial.name}</div>
-                    <div className="text-slate-500 text-sm">{testimonial.role} at {testimonial.company}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+            <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
+              We'd love to hear how Career Black Box is helping you. Your feedback shapes our product.
+            </p>
+            <a href="mailto:feedback@careerblackbox.com" className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-medium transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Send Feedback
+            </a>
           </div>
         </div>
       </section>
@@ -490,7 +508,7 @@ export default function HomePage() {
 
               <div className="text-sm font-medium text-indigo-300 uppercase tracking-wider mb-2">Pro</div>
               <div className="text-4xl font-bold text-white mb-1 font-outfit">
-                <span className="line-through text-slate-500 text-2xl">$5</span> $0
+                <span className="line-through text-slate-500 text-2xl">₹500</span> ₹0
                 <span className="text-lg text-slate-400 font-normal">/month</span>
               </div>
               <div className="text-sm text-indigo-300 mb-6">Free during beta!</div>
@@ -591,14 +609,10 @@ export default function HomePage() {
                 The flight recorder for your career. Document decisions, prove your value, get promoted.
               </p>
               <div className="flex gap-4">
-                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" /></svg>
-                </a>
-                <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" /></svg>
-                </a>
-                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                <a href="mailto:support@careerblackbox.com" className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors" aria-label="Email us">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
                 </a>
               </div>
             </div>

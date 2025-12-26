@@ -35,8 +35,9 @@ export function PromotionPackageGenerator({ decisionCount }: PromotionPackageGen
             }
 
             setGeneratedPackage(data.package);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to generate package';
+            setError(message);
         } finally {
             setGenerating(false);
         }
@@ -98,7 +99,7 @@ export function PromotionPackageGenerator({ decisionCount }: PromotionPackageGen
                 </Button>
 
                 <p className="text-xs text-indigo-200 mt-3">
-                    💡 Free while in beta. Normally $5 per generation.
+                    💡 Free while in beta. Normally ₹500 per generation.
                 </p>
             </div>
 

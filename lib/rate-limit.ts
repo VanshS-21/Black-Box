@@ -1,6 +1,16 @@
 /**
  * Simple in-memory rate limiter for API endpoints
- * Note: For production at scale, use Redis or similar
+ * 
+ * ⚠️ IMPORTANT: SERVERLESS LIMITATION
+ * This in-memory rate limiter does NOT work correctly on Vercel or other serverless platforms!
+ * Each function invocation may run in a different instance, resetting the rate limit state.
+ * 
+ * For production, implement one of these solutions:
+ * 1. Upstash Redis with @upstash/ratelimit (recommended for Vercel)
+ * 2. Vercel KV (built-in Redis)
+ * 3. Store rate limits in Supabase database
+ * 
+ * See: https://upstash.com/docs/oss/sdks/ts/ratelimit/overview
  */
 
 interface RateLimitRecord {
