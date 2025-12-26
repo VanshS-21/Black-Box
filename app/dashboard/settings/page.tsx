@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, AlertTriangle, Lightbulb, Trash2 } from 'lucide-react';
+import { ArrowLeft, Download, AlertTriangle, Lightbulb, Trash2, MessageSquare, Copy, Check, RefreshCw, Unlink } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -22,6 +22,75 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    // Slack integration state
+    const [slackStatus, setSlackStatus] = useState<'loading' | 'unlinked' | 'pending' | 'linked'>('loading');
+    const [slackLinkCode, setSlackLinkCode] = useState('');
+    const [slackExpiresAt, setSlackExpiresAt] = useState('');
+    const [slackLinkedAt, setSlackLinkedAt] = useState('');
+    const [copiedCode, setCopiedCode] = useState(false);
+    const [generatingCode, setGeneratingCode] = useState(false);
+
+    // Fetch Slack link status on mount
+    useEffect(() => {
+        fetchSlackStatus();
+    }, []);
+
+    const fetchSlackStatus = async () => {
+        try {
+            const response = await fetch('/api/slack/link');
+            if (response.ok) {
+                const data = await response.json();
+                setSlackStatus(data.status);
+                if (data.link_code) setSlackLinkCode(data.link_code);
+                if (data.expires_at) setSlackExpiresAt(data.expires_at);
+                if (data.linked_at) setSlackLinkedAt(data.linked_at);
+            }
+        } catch (err) {
+            console.error('Failed to fetch Slack status:', err);
+            setSlackStatus('unlinked');
+        }
+    };
+
+    const generateSlackCode = async () => {
+        setGeneratingCode(true);
+        try {
+            const response = await fetch('/api/slack/link', { method: 'POST' });
+            if (response.ok) {
+                const data = await response.json();
+                setSlackStatus('pending');
+                setSlackLinkCode(data.link_code);
+                setSlackExpiresAt(data.expires_at);
+                showToast('Link code generated!', 'success');
+            } else {
+                showToast('Failed to generate code', 'error');
+            }
+        } catch (err) {
+            showToast('Failed to generate code', 'error');
+        } finally {
+            setGeneratingCode(false);
+        }
+    };
+
+    const unlinkSlack = async () => {
+        try {
+            const response = await fetch('/api/slack/link', { method: 'DELETE' });
+            if (response.ok) {
+                setSlackStatus('unlinked');
+                setSlackLinkCode('');
+                setSlackLinkedAt('');
+                showToast('Slack unlinked', 'success');
+            }
+        } catch (err) {
+            showToast('Failed to unlink Slack', 'error');
+        }
+    };
+
+    const copyLinkCode = () => {
+        navigator.clipboard.writeText(slackLinkCode);
+        setCopiedCode(true);
+        setTimeout(() => setCopiedCode(false), 2000);
+    };
 
     const handleExport = async () => {
         try {
@@ -225,6 +294,86 @@ export default function SettingsPage() {
                                     <Download className="w-4 h-4 mr-2" /> Export All Data
                                 </Button>
                             </motion.div>
+                        </div>
+                    </FadeIn>
+
+                    {/* Slack Integration Section */}
+                    <FadeIn delay={0.25}>
+                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-[#4A154B] rounded-lg flex items-center justify-center">
+                                    <MessageSquare className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-semibold text-white font-outfit">Slack Integration</h2>
+                                    <p className="text-sm text-slate-400">Log decisions directly from Slack</p>
+                                </div>
+                            </div>
+
+                            {slackStatus === 'loading' && (
+                                <div className="text-slate-400">Loading...</div>
+                            )}
+
+                            {slackStatus === 'linked' && (
+                                <div className="space-y-4">
+                                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                                        <div className="flex items-center gap-2 text-green-400">
+                                            <Check className="w-5 h-5" />
+                                            <span className="font-medium">Connected to Slack</span>
+                                        </div>
+                                        <p className="text-sm text-green-300/70 mt-1">
+                                            Linked {slackLinkedAt ? new Date(slackLinkedAt).toLocaleDateString() : 'recently'}
+                                        </p>
+                                    </div>
+                                    <p className="text-slate-400 text-sm">
+                                        Use <code className="bg-slate-800 px-2 py-0.5 rounded text-violet-400">/logdecision</code> in Slack to log decisions.
+                                    </p>
+                                    <Button onClick={unlinkSlack} variant="outline" className="border-red-500/20 text-red-400 hover:bg-red-500/10">
+                                        <Unlink className="w-4 h-4 mr-2" /> Unlink Slack
+                                    </Button>
+                                </div>
+                            )}
+
+                            {slackStatus === 'pending' && (
+                                <div className="space-y-4">
+                                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                                        <p className="text-amber-400 font-medium mb-2">Enter this code in Slack:</p>
+                                        <div className="flex items-center gap-2">
+                                            <code className="bg-slate-800 px-4 py-2 rounded-lg text-2xl font-mono text-white tracking-widest">
+                                                {slackLinkCode}
+                                            </code>
+                                            <Button onClick={copyLinkCode} variant="ghost" size="sm">
+                                                {copiedCode ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                                            </Button>
+                                        </div>
+                                        <p className="text-sm text-amber-300/70 mt-2">
+                                            Expires in {slackExpiresAt ? Math.max(0, Math.round((new Date(slackExpiresAt).getTime() - Date.now()) / 60000)) : 15} minutes
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-800/50 rounded-lg p-4">
+                                        <p className="text-slate-300 text-sm">In Slack, type:</p>
+                                        <code className="text-violet-400 text-sm">/logdecision link {slackLinkCode}</code>
+                                    </div>
+                                    <Button onClick={generateSlackCode} variant="outline" disabled={generatingCode}>
+                                        <RefreshCw className={`w-4 h-4 mr-2 ${generatingCode ? 'animate-spin' : ''}`} />
+                                        Generate New Code
+                                    </Button>
+                                </div>
+                            )}
+
+                            {slackStatus === 'unlinked' && (
+                                <div className="space-y-4">
+                                    <p className="text-slate-400">
+                                        Connect your Slack account to log decisions with <code className="bg-slate-800 px-2 py-0.5 rounded text-violet-400">/logdecision</code>.
+                                    </p>
+                                    <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                                        <Button onClick={generateSlackCode} variant="primary" disabled={generatingCode}>
+                                            <MessageSquare className="w-4 h-4 mr-2" />
+                                            {generatingCode ? 'Generating...' : 'Connect Slack'}
+                                        </Button>
+                                    </motion.div>
+                                </div>
+                            )}
                         </div>
                     </FadeIn>
 

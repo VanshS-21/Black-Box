@@ -21,7 +21,10 @@ import {
   ArrowRight,
   Check,
   Menu,
-  X
+  X,
+  Users,
+  Building2,
+  Chrome
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/FadeIn';
@@ -161,6 +164,7 @@ export default function HomePage() {
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">Features</a>
               <a href="#how-it-works" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">How it Works</a>
+              <a href="#for-teams" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">For Teams</a>
               <a href="#pricing" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">Pricing</a>
               <a href="#faq" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">FAQ</a>
             </div>
@@ -199,6 +203,7 @@ export default function HomePage() {
                 <div className="flex flex-col gap-2">
                   <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">Features</a>
                   <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">How it Works</a>
+                  <a href="#for-teams" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">For Teams</a>
                   <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">Pricing</a>
                   <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">FAQ</a>
                 </div>
@@ -409,6 +414,92 @@ export default function HomePage() {
               </StaggerItem>
             ))}
           </StaggerContainer>
+        </div>
+      </section>
+
+      {/* For Teams Section - Engineering Managers */}
+      <section className="py-24 relative" id="for-teams">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FadeIn>
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-300 text-sm font-medium backdrop-blur-sm mb-6">
+                <Building2 className="w-4 h-4" />
+                <span>For Engineering Teams</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 font-outfit">
+                Never lose
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400"> institutional knowledge</span>
+              </h2>
+              <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+                When engineers leave, their context leaves with them. Career Black Box keeps your team's architectural history alive.
+              </p>
+            </div>
+          </FadeIn>
+
+          <StaggerContainer className="grid md:grid-cols-3 gap-8">
+            <StaggerItem>
+              <motion.div
+                whileHover={{ y: -4 }}
+                className="bg-gradient-to-br from-emerald-950/50 to-teal-950/50 backdrop-blur-md rounded-2xl p-8 border border-emerald-500/20 h-full"
+              >
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-6 shadow-lg">
+                  <Users className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3 font-outfit">Team-Wide Decision History</h3>
+                <p className="text-slate-400 leading-relaxed mb-4">
+                  "Why did we choose Kafka over RabbitMQ?" Stop asking Slack—it's documented with full context.
+                </p>
+                <div className="text-emerald-400 text-sm font-medium">
+                  → Survives employee turnover
+                </div>
+              </motion.div>
+            </StaggerItem>
+
+            <StaggerItem>
+              <motion.div
+                whileHover={{ y: -4 }}
+                className="bg-gradient-to-br from-emerald-950/50 to-teal-950/50 backdrop-blur-md rounded-2xl p-8 border border-emerald-500/20 h-full"
+              >
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-6 shadow-lg">
+                  <BarChart3 className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3 font-outfit">Performance Reviews with Data</h3>
+                <p className="text-slate-400 leading-relaxed mb-4">
+                  No more "I think they did something good." Generate evidence-backed reviews from real decisions.
+                </p>
+                <div className="text-emerald-400 text-sm font-medium">
+                  → Better calibration, happier engineers
+                </div>
+              </motion.div>
+            </StaggerItem>
+
+            <StaggerItem>
+              <motion.div
+                whileHover={{ y: -4 }}
+                className="bg-gradient-to-br from-emerald-950/50 to-teal-950/50 backdrop-blur-md rounded-2xl p-8 border border-emerald-500/20 h-full"
+              >
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-6 shadow-lg">
+                  <Chrome className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3 font-outfit">Capture in Flow of Work</h3>
+                <p className="text-slate-400 leading-relaxed mb-4">
+                  Chrome Extension coming soon—right-click any Slack message or GitHub comment to log a decision in 5 seconds.
+                </p>
+                <div className="text-emerald-400 text-sm font-medium">
+                  → Zero workflow disruption
+                </div>
+              </motion.div>
+            </StaggerItem>
+          </StaggerContainer>
+
+          <FadeIn delay={0.3}>
+            <div className="text-center mt-12">
+              <a href="mailto:teams@careerblackbox.com" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                <span>Interested in team features? Contact us</span>
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </div>
+          </FadeIn>
         </div>
       </section>
 

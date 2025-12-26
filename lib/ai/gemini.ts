@@ -37,6 +37,15 @@ async function withTimeout<T>(
     return Promise.race([promise, timeoutPromise]);
 }
 
+// Career coaching feedback returned with each structured decision
+export interface CareerCoaching {
+    impact_reframe: string;       // Decision rewritten to emphasize business impact
+    weak_phrases: string[];       // Vague language that should be strengthened
+    power_phrases: string[];      // Better alternatives to weak phrases
+    promotion_readiness: number;  // 1-10 score of how ready this is for promo doc
+    coaching_tip: string;         // One actionable piece of advice
+}
+
 export interface StructuredDecision {
     title: string;
     decision_made: string;
@@ -46,31 +55,44 @@ export interface StructuredDecision {
     stakeholders: string | null;
     confidence_level: number;
     tags: string[];
+    // NEW: Career coaching feedback
+    coaching: CareerCoaching;
 }
 
 /**
- * Structure a raw decision input using AI
+ * Structure a raw decision input using AI with career coaching
  */
 export async function structureDecision(rawInput: string): Promise<StructuredDecision> {
     const model = getGeminiModel();
 
-    const prompt = `You are extracting structured information from a professional's decision log.
+    const prompt = `You are a senior engineering career coach helping professionals document their decisions for promotion reviews.
 
 Input: ${rawInput}
 
-Extract the following in JSON format:
+Your job is TWO-FOLD:
+1. Extract structured information from this decision
+2. Coach them on how to present it for maximum career impact
+
+Return ONLY valid JSON (no markdown) with this EXACT structure:
 {
-  "title": "A concise title (max 100 chars)",
+  "title": "A concise, impactful title (max 100 chars)",
   "decision_made": "What was decided (1-2 sentences)",
   "context": "The situation and constraints (2-3 sentences)",
-  "trade_offs": "What was given up (2-3 sentences)",
+  "trade_offs": "What was given up (2-3 sentences)", 
   "biggest_risk": "The main risk accepted (1-2 sentences)",
   "stakeholders": "Who was involved (1 sentence, or null)",
   "confidence_level": 1-10 integer,
-  "tags": ["tag1", "tag2", "tag3"] (max 5, lowercase)
+  "tags": ["tag1", "tag2", "tag3"],
+  "coaching": {
+    "impact_reframe": "Rewrite their decision to emphasize BUSINESS IMPACT. If they said 'fixed a bug', rewrite as 'Reduced user churn by preventing checkout failures'. Be specific with hypothetical metrics if none given.",
+    "weak_phrases": ["list of 1-3 vague phrases from their input that undermine their credibility, e.g. 'fixed a bug', 'improved performance', 'helped the team'"],
+    "power_phrases": ["corresponding power phrases that quantify impact, e.g. 'eliminated 500ms latency bottleneck', 'reduced p99 response time by 40%'"],
+    "promotion_readiness": 1-10 score where 10 = ready for Staff Engineer promo doc,
+    "coaching_tip": "One specific, actionable tip to strengthen this entry. Be encouraging but direct."
+  }
 }
 
-Be concise. Preserve the user's technical terms and specifics. Return ONLY valid JSON, no markdown formatting.`;
+CRITICAL: The coaching.impact_reframe should sound like a Senior/Staff engineer wrote it. Focus on scope, impact, and technical leadership.`;
 
     try {
         const result = await withTimeout(
@@ -92,6 +114,9 @@ Be concise. Preserve the user's technical terms and specifics. Return ONLY valid
                 throw new Error('Incomplete AI response');
             }
 
+            // Ensure coaching object exists with defaults
+            const coaching = parsed.coaching || {};
+
             return {
                 title: String(parsed.title).slice(0, 200),
                 decision_made: String(parsed.decision_made),
@@ -103,6 +128,17 @@ Be concise. Preserve the user's technical terms and specifics. Return ONLY valid
                 tags: Array.isArray(parsed.tags)
                     ? parsed.tags.slice(0, 5).map((t: unknown) => String(t).toLowerCase().slice(0, 50))
                     : [],
+                coaching: {
+                    impact_reframe: String(coaching.impact_reframe || parsed.decision_made),
+                    weak_phrases: Array.isArray(coaching.weak_phrases)
+                        ? coaching.weak_phrases.slice(0, 5).map((p: unknown) => String(p))
+                        : [],
+                    power_phrases: Array.isArray(coaching.power_phrases)
+                        ? coaching.power_phrases.slice(0, 5).map((p: unknown) => String(p))
+                        : [],
+                    promotion_readiness: Math.min(10, Math.max(1, Number(coaching.promotion_readiness) || 5)),
+                    coaching_tip: String(coaching.coaching_tip || 'Add specific metrics to strengthen your impact.'),
+                },
             };
         } catch (parseError) {
             console.error('Failed to parse Gemini response:', cleanedText);
@@ -115,6 +151,7 @@ Be concise. Preserve the user's technical terms and specifics. Return ONLY valid
         throw new Error('An unexpected error occurred while structuring your decision.');
     }
 }
+
 
 /**
  * Generate a promotion package from user's decisions

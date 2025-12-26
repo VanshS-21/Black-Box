@@ -38,6 +38,15 @@ export const createDecisionSchema = z.object({
         .nullable()
         .optional(),
     ai_structured: z.boolean().optional().default(false),
+    // Source tracking for Chrome Extension and future integrations
+    source: z.enum(['web', 'chrome_extension', 'slack', 'github'])
+        .optional()
+        .default('web'),
+    source_url: z.string()
+        .url('Invalid URL')
+        .max(2000, 'URL must be 2000 characters or less')
+        .nullable()
+        .optional(),
 });
 
 // AI structure input validation

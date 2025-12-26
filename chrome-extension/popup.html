@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Career Black Box</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <span class="logo-text">Career Black Box</span>
+      </div>
+      <div id="auth-status" class="status-badge status-unknown">
+        <span class="status-dot"></span>
+        <span class="status-text">Checking...</span>
+      </div>
+    </header>
+
+    <!-- Not Logged In State -->
+    <div id="login-prompt" class="state-container hidden">
+      <div class="empty-state">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        <h2>Sign in to get started</h2>
+        <p>Log your decisions in seconds from anywhere on the web.</p>
+        <a href="https://career-black-box.vercel.app/auth/login" target="_blank" class="btn btn-primary">
+          Sign In
+        </a>
+      </div>
+    </div>
+
+    <!-- Logged In State -->
+    <div id="main-content" class="state-container hidden">
+      <!-- Quick Capture Form -->
+      <div class="capture-form">
+        <label for="decision-input" class="input-label">
+          <span>What did you decide?</span>
+          <span class="char-count"><span id="char-count">0</span>/50 min</span>
+        </label>
+        <textarea 
+          id="decision-input" 
+          class="decision-textarea" 
+          placeholder="Paste or type your decision here... e.g., 'Chose Redis over Memcached for session storage because we need persistence and pub/sub for real-time features.'"
+          rows="6"
+        ></textarea>
+        
+        <!-- Source Info -->
+        <div id="source-info" class="source-info hidden">
+          <span class="source-label">Captured from:</span>
+          <span id="source-url" class="source-url"></span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button id="structure-btn" class="btn btn-primary" disabled>
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            <span id="btn-text">Structure with AI</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Success Message -->
+      <div id="success-message" class="success-message hidden">
+        <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <h3>Decision Logged!</h3>
+        <p>View it in your dashboard.</p>
+        <div class="success-actions">
+          <a href="https://career-black-box.vercel.app/dashboard" target="_blank" class="btn btn-secondary">
+            Open Dashboard
+          </a>
+          <button id="log-another-btn" class="btn btn-ghost">
+            Log Another
+          </button>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div id="error-message" class="error-message hidden">
+        <p id="error-text"></p>
+        <button id="retry-btn" class="btn btn-ghost">Try Again</button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <a href="https://career-black-box.vercel.app/dashboard" target="_blank" class="footer-link">
+        Dashboard
+      </a>
+      <span class="footer-divider">•</span>
+      <a href="https://career-black-box.vercel.app" target="_blank" class="footer-link">
+        Website
+      </a>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

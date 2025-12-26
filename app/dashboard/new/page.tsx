@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, PenLine, Save, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 import { VibeInput } from '@/components/VibeInput';
+import { CoachingFeedback } from '@/components/CoachingFeedback';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -44,6 +45,11 @@ export default function NewDecisionPage() {
         setStakeholders(data.stakeholders || '');
         setConfidenceLevel(data.confidence_level);
         setTags(data.tags.join(', '));
+    };
+
+    // Handle accepting AI's reframed decision
+    const handleAcceptReframe = (reframedText: string) => {
+        setDecisionMade(reframedText);
     };
 
     const handleSave = async () => {
@@ -157,16 +163,27 @@ export default function NewDecisionPage() {
                         {(mode === 'manual' || structured) && (
                             <div className="space-y-6">
                                 {structured && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4 flex items-center gap-3"
-                                    >
-                                        <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                                        <p className="text-sm text-green-300">
-                                            <strong>AI has structured your decision!</strong> Review and edit below, then save.
-                                        </p>
-                                    </motion.div>
+                                    <>
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4 flex items-center gap-3"
+                                        >
+                                            <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                                            <p className="text-sm text-green-300">
+                                                <strong>AI has structured your decision!</strong> Review the coaching feedback below, then edit and save.
+                                            </p>
+                                        </motion.div>
+
+                                        {/* AI Coaching Feedback */}
+                                        <CoachingFeedback
+                                            coaching={structured.coaching}
+                                            originalDecision={structured.decision_made}
+                                            onAcceptReframe={handleAcceptReframe}
+                                        />
+
+                                        <hr className="border-white/10 my-6" />
+                                    </>
                                 )}
 
                                 <div>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { structureDecision } from '@/lib/ai/gemini';
 import { rawInputSchema } from '@/lib/validations/decision';
-import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/upstash-rate-limit';
 import { ZodError } from 'zod';
 
 export async function POST(request: NextRequest) {
@@ -15,11 +15,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limiting for AI endpoints (more restrictive)
-        const rateLimit = checkRateLimit(
-            getRateLimitKey(user.id, 'ai:structure'),
-            RATE_LIMITS.ai.limit,
-            RATE_LIMITS.ai.windowMs
-        );
+        const rateLimit = await checkRateLimit(user.id, 'ai');
 
         if (!rateLimit.allowed) {
             return NextResponse.json(
@@ -29,9 +25,7 @@ export async function POST(request: NextRequest) {
                 },
                 {
                     status: 429,
-                    headers: {
-                        'Retry-After': String(Math.ceil(rateLimit.resetIn / 1000)),
-                    }
+                    headers: getRateLimitHeaders(rateLimit),
                 }
             );
         }

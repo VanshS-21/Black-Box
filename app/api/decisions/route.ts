@@ -106,6 +106,8 @@ export async function POST(request: NextRequest) {
                 tags: validatedData.tags || [],
                 original_input: validatedData.original_input || null,
                 ai_structured: validatedData.ai_structured || false,
+                source: validatedData.source || 'web',
+                source_url: validatedData.source_url || null,
             })
             .select()
             .single();
