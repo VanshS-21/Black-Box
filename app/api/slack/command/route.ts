@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
             return await handleLinkCommand(slackUserId, slackTeamId, args);
         }
 
-        // Handle log command - ALWAYS process synchronously
-        // Slack will show "processing" for up to 30 seconds
+        // Handle log command - process synchronously
+        // Slack will show "thinking" for up to 30 seconds while we process
         return await handleLogCommand(slackUserId, slackTeamId, args, responseUrl);
 
     } catch (error) {
@@ -164,25 +164,8 @@ async function handleLogCommand(
         );
     }
 
-    // CRITICAL FIX: Slack requires a response within 3 seconds!
-    // We must respond immediately with acknowledgement, then process async.
-    // Fire off async processing - this will respond via response_url when done
-    // Using void to explicitly ignore the promise (fire and forget)
-    void processDecisionAsync(userId, decisionText, responseUrl);
-
-    // Return immediate acknowledgement to Slack (within 3 seconds)
-    return NextResponse.json({
-        response_type: 'ephemeral',
-        text: '⏳ Processing your decision with AI... You\'ll receive a confirmation shortly.'
-    }, { status: 200 });
-}
-
-// Process decision asynchronously and respond via response_url
-async function processDecisionAsync(
-    userId: string,
-    decisionText: string,
-    responseUrl: string
-): Promise<void> {
+    // Process synchronously - Slack shows "thinking" indicator while we work
+    // We have maxDuration=30 seconds to complete this
     try {
         const structured = await structureDecision(decisionText);
 
@@ -206,31 +189,25 @@ async function processDecisionAsync(
             });
 
         if (saveError) {
-            await sendSlackResponse(responseUrl, formatSlackError('Failed to save decision.'));
-            return;
+            console.error('Failed to save decision:', saveError);
+            return NextResponse.json(
+                formatSlackError('Failed to save decision. Please try again.'),
+                { status: 200 }
+            );
         }
 
-        await sendSlackResponse(
-            responseUrl,
+        return NextResponse.json(
             formatDecisionConfirmation(
                 structured.title,
                 structured.coaching?.coaching_tip || 'Decision logged successfully!'
-            )
+            ),
+            { status: 200 }
         );
     } catch (error) {
-        console.error('Async decision processing failed:', error);
-        await sendSlackResponse(responseUrl, formatSlackError('AI processing failed.'));
-    }
-}
-
-async function sendSlackResponse(responseUrl: string, payload: object): Promise<void> {
-    try {
-        await fetch(responseUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-    } catch (error) {
-        console.error('Failed to send Slack response:', error);
+        console.error('AI structuring failed:', error);
+        return NextResponse.json(
+            formatSlackError('AI processing failed. Please try again.'),
+            { status: 200 }
+        );
     }
 }
