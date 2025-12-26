@@ -2,14 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Download, AlertTriangle, Lightbulb, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import Link from 'next/link';
+import { FadeIn } from '@/components/ui/FadeIn';
+import { useToast } from '@/components/ui/Toast';
 
 export default function SettingsPage() {
     const router = useRouter();
     const { user, signOut } = useAuth();
+    const { showToast } = useToast();
     const [userRole, setUserRole] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -37,11 +42,11 @@ export default function SettingsPage() {
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                setSuccess('Data exported successfully!');
+                showToast('Data exported successfully!', 'success');
             }
         } catch (err) {
             console.error('Export error:', err);
-            setError('Failed to export data');
+            showToast('Failed to export data', 'error');
         }
     };
 
@@ -68,7 +73,7 @@ export default function SettingsPage() {
 
             if (error) throw error;
 
-            setSuccess('Password updated successfully!');
+            showToast('Password updated successfully!', 'success');
             setNewPassword('');
             setConfirmPassword('');
         } catch (err: any) {
@@ -80,13 +85,11 @@ export default function SettingsPage() {
 
     const handleDeleteAccount = async () => {
         try {
-            // In production, you'd want to call a proper account deletion endpoint
-            // For now, we'll just sign out and show a message
             await signOut();
             router.push('/');
         } catch (err) {
             console.error('Delete error:', err);
-            setError('Failed to delete account');
+            showToast('Failed to delete account', 'error');
         }
     };
 
@@ -105,7 +108,7 @@ export default function SettingsPage() {
                         </div>
                         <Link href="/dashboard">
                             <Button variant="outline" className="border-white/10 text-slate-300 hover:bg-white/5 hover:text-white">
-                                ← Back to Dashboard
+                                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
                             </Button>
                         </Link>
                     </div>
@@ -115,149 +118,186 @@ export default function SettingsPage() {
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
                 <div className="space-y-6">
                     {/* Profile Section */}
-                    <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
-                        <h2 className="text-xl font-semibold text-white mb-4 font-outfit">Profile</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    Email
-                                </label>
-                                <Input
-                                    value={user?.email || ''}
-                                    disabled
-                                    className="bg-slate-800/50 border-white/5 text-slate-400"
-                                />
-                                <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
-                            </div>
+                    <FadeIn>
+                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
+                            <h2 className="text-xl font-semibold text-white mb-4 font-outfit">Profile</h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                                        Email
+                                    </label>
+                                    <Input
+                                        value={user?.email || ''}
+                                        disabled
+                                        className="bg-slate-800/50 border-white/5 text-slate-400"
+                                    />
+                                    <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
+                                </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    Current Role (Optional)
-                                </label>
-                                <Input
-                                    value={userRole}
-                                    onChange={(e) => setUserRole(e.target.value)}
-                                    placeholder="e.g., Senior Software Engineer"
-                                    className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
-                                />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                                        Current Role (Optional)
+                                    </label>
+                                    <Input
+                                        value={userRole}
+                                        onChange={(e) => setUserRole(e.target.value)}
+                                        placeholder="e.g., Senior Software Engineer"
+                                        className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </FadeIn>
 
                     {/* Password Section */}
-                    <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
-                        <h2 className="text-xl font-semibold text-white mb-4 font-outfit">Change Password</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    New Password
-                                </label>
-                                <Input
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    placeholder="Enter new password"
-                                    className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    Confirm New Password
-                                </label>
-                                <Input
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="Confirm new password"
-                                    className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
-                                />
-                            </div>
-
-                            {error && (
-                                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
-                                    {error}
+                    <FadeIn delay={0.1}>
+                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
+                            <h2 className="text-xl font-semibold text-white mb-4 font-outfit">Change Password</h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                                        New Password
+                                    </label>
+                                    <Input
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="Enter new password"
+                                        className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
+                                    />
                                 </div>
-                            )}
 
-                            {success && (
-                                <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg text-sm">
-                                    {success}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                                        Confirm New Password
+                                    </label>
+                                    <Input
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="Confirm new password"
+                                        className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
+                                    />
                                 </div>
-                            )}
 
-                            <Button
-                                onClick={handlePasswordChange}
-                                disabled={saving}
-                                variant="primary"
-                            >
-                                {saving ? 'Updating...' : 'Update Password'}
-                            </Button>
+                                {error && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm"
+                                    >
+                                        {error}
+                                    </motion.div>
+                                )}
+
+                                {success && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg text-sm"
+                                    >
+                                        {success}
+                                    </motion.div>
+                                )}
+
+                                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                                    <Button
+                                        onClick={handlePasswordChange}
+                                        disabled={saving}
+                                        variant="primary"
+                                    >
+                                        {saving ? 'Updating...' : 'Update Password'}
+                                    </Button>
+                                </motion.div>
+                            </div>
                         </div>
-                    </div>
+                    </FadeIn>
 
                     {/* Export Data Section */}
-                    <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
-                        <h2 className="text-xl font-semibold text-white mb-4 font-outfit">Export Data</h2>
-                        <p className="text-slate-400 mb-4">
-                            Download all your decisions and data as a JSON file.
-                        </p>
-                        <Button onClick={handleExport} variant="secondary">
-                            📥 Export All Data
-                        </Button>
-                    </div>
+                    <FadeIn delay={0.2}>
+                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
+                            <h2 className="text-xl font-semibold text-white mb-4 font-outfit">Export Data</h2>
+                            <p className="text-slate-400 mb-4">
+                                Download all your decisions and data as a JSON file.
+                            </p>
+                            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                                <Button onClick={handleExport} variant="secondary">
+                                    <Download className="w-4 h-4 mr-2" /> Export All Data
+                                </Button>
+                            </motion.div>
+                        </div>
+                    </FadeIn>
 
                     {/* Danger Zone */}
-                    <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-6">
-                        <h2 className="text-xl font-semibold text-red-400 mb-4 font-outfit">⚠️ Danger Zone</h2>
-                        <p className="text-red-300/70 mb-4">
-                            Once you delete your account, there is no going back. Please be certain.
-                        </p>
-                        <Button
-                            onClick={() => setShowDeleteConfirm(true)}
-                            variant="danger"
-                        >
-                            Delete Account
-                        </Button>
-                    </div>
+                    <FadeIn delay={0.3}>
+                        <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-6">
+                            <h2 className="text-xl font-semibold text-red-400 mb-4 font-outfit flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5" /> Danger Zone
+                            </h2>
+                            <p className="text-red-300/70 mb-4">
+                                Once you delete your account, there is no going back. Please be certain.
+                            </p>
+                            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                                <Button
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    variant="danger"
+                                >
+                                    <Trash2 className="w-4 h-4 mr-2" /> Delete Account
+                                </Button>
+                            </motion.div>
+                        </div>
+                    </FadeIn>
                 </div>
             </main>
 
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-slate-900 border border-white/10 rounded-xl p-6 max-w-md mx-4 shadow-2xl">
-                        <h3 className="text-xl font-bold text-white mb-2 font-outfit">
-                            ⚠️ Delete Account?
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                >
+                    <motion.div
+                        initial={{ scale: 0.95 }}
+                        animate={{ scale: 1 }}
+                        className="bg-slate-900 border border-white/10 rounded-xl p-6 max-w-md mx-4 shadow-2xl"
+                    >
+                        <h3 className="text-xl font-bold text-white mb-2 font-outfit flex items-center gap-2">
+                            <AlertTriangle className="w-5 h-5 text-amber-400" /> Delete Account?
                         </h3>
                         <p className="text-slate-400 mb-4">
                             This action cannot be undone. All your decisions and data will be permanently deleted.
                         </p>
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4">
-                            <p className="text-sm text-amber-400">
-                                💡 <strong>Tip:</strong> Export your data first before deleting your account.
+                            <p className="text-sm text-amber-400 flex items-center gap-2">
+                                <Lightbulb className="w-4 h-4 flex-shrink-0" />
+                                <span><strong>Tip:</strong> Export your data first before deleting your account.</span>
                             </p>
                         </div>
                         <div className="flex gap-4">
-                            <Button
-                                onClick={handleDeleteAccount}
-                                variant="danger"
-                                size="lg"
-                                className="flex-1"
-                            >
-                                Yes, Delete Forever
-                            </Button>
-                            <Button
-                                onClick={() => setShowDeleteConfirm(false)}
-                                variant="outline"
-                                size="lg"
-                                className="flex-1 border-white/10 text-slate-300 hover:bg-white/5"
-                            >
-                                Cancel
-                            </Button>
+                            <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Button
+                                    onClick={handleDeleteAccount}
+                                    variant="danger"
+                                    size="lg"
+                                    className="w-full"
+                                >
+                                    Yes, Delete Forever
+                                </Button>
+                            </motion.div>
+                            <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Button
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    variant="outline"
+                                    size="lg"
+                                    className="w-full border-white/10 text-slate-300 hover:bg-white/5"
+                                >
+                                    Cancel
+                                </Button>
+                            </motion.div>
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
         </div>
     );

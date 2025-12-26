@@ -1,4 +1,5 @@
 import { AuthProvider } from '@/lib/auth/context';
+import { ToastProvider } from '@/components/ui/Toast';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import type { Metadata } from 'next';
@@ -42,10 +43,13 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${outfit.variable} font-sans antialiased text-slate-900 bg-slate-50`}>
         <AuthProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </AuthProvider>
         <SpeedInsights />
       </body>
     </html>
   );
 }
+

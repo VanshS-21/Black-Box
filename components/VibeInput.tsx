@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Lightbulb, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { StructuredDecision } from '@/lib/ai/gemini';
@@ -59,35 +61,43 @@ export function VibeInput({ onStructured }: VibeInputProps) {
                     placeholder="Just write naturally... For example: 'Last week I decided to use PostgreSQL instead of MongoDB for our new project. We needed better transaction support and our data is relational anyway. The team was initially skeptical because they're more familiar with Mongo, but I think the better data integrity is worth the learning curve. My biggest concern is the migration time...'"
                     className="min-h-[200px] bg-black/20 border-white/10 text-white placeholder:text-slate-600"
                 />
-                <p className="text-xs text-slate-400 mt-2">
-                    💡 <strong className="text-slate-300">Tip:</strong> Write 2-3 paragraphs about your decision. I'll structure it for you!
+                <p className="text-xs text-slate-400 mt-2 flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-amber-400" />
+                    <span><strong className="text-slate-300">Tip:</strong> Write 2-3 paragraphs about your decision. I'll structure it for you!</span>
                 </p>
             </div>
 
             {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm"
+                >
                     {error}
-                </div>
+                </motion.div>
             )}
 
-            <Button
-                onClick={handleStructure}
-                disabled={loading || input.trim().length < 50}
-                variant="primary"
-                size="lg"
-            >
-                {loading ? (
-                    <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        AI is structuring your decision...
-                    </span>
-                ) : (
-                    '✨ Structure This for Me'
-                )}
-            </Button>
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                <Button
+                    onClick={handleStructure}
+                    disabled={loading || input.trim().length < 50}
+                    variant="primary"
+                    size="lg"
+                    className="w-full"
+                >
+                    {loading ? (
+                        <span className="flex items-center gap-2">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            AI is structuring your decision...
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-2">
+                            <Sparkles className="w-5 h-5" />
+                            Structure This for Me
+                        </span>
+                    )}
+                </Button>
+            </motion.div>
         </div>
     );
 }

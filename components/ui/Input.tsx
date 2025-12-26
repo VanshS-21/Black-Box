@@ -1,23 +1,39 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> { }
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    error?: boolean;
+    helperText?: string;
+}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-    ({ className, type = 'text', ...props }, ref) => {
+    ({ className, type = 'text', error, helperText, ...props }, ref) => {
         return (
-            <input
-                type={type}
-                ref={ref}
-                className={cn(
-                    'flex h-10 w-full rounded-lg border border-white/10 bg-slate-950/20 px-3 py-2 text-sm text-white',
-                    'placeholder:text-slate-500',
-                    'focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent',
-                    'disabled:cursor-not-allowed disabled:opacity-50',
-                    className
+            <div className="w-full">
+                <input
+                    type={type}
+                    ref={ref}
+                    className={cn(
+                        'flex h-10 w-full rounded-lg border bg-slate-950/20 px-3 py-2 text-sm text-white',
+                        'placeholder:text-slate-500',
+                        'focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200',
+                        'disabled:cursor-not-allowed disabled:opacity-50',
+                        error
+                            ? 'border-red-500/50 focus:ring-red-500/50'
+                            : 'border-white/10 focus:ring-indigo-500/50',
+                        className
+                    )}
+                    {...props}
+                />
+                {helperText && (
+                    <p className={cn(
+                        'mt-1 text-xs',
+                        error ? 'text-red-400' : 'text-slate-500'
+                    )}>
+                        {helperText}
+                    </p>
                 )}
-                {...props}
-            />
+            </div>
         );
     }
 );

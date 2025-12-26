@@ -14,8 +14,10 @@ function getGeminiModel(): GenerativeModel {
             throw new Error('GOOGLE_GEMINI_API_KEY is not configured. Please add it to your environment variables.');
         }
         const genAI = new GoogleGenerativeAI(apiKey);
+        // Gemini 2.5 Flash - latest model with excellent performance
+        // Free tier: high throughput, optimized for reasoning tasks
         geminiModel = genAI.getGenerativeModel({
-            model: 'gemini-2.0-flash-exp',
+            model: 'gemini-2.5-flash',
         });
     }
     return geminiModel;

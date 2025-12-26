@@ -1,4 +1,8 @@
+'use client';
+
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Lock, Sparkles } from 'lucide-react';
 import { Decision } from '@/lib/supabase/client';
 
 interface DecisionCardProps {
@@ -14,21 +18,30 @@ export function DecisionCard({ decision }: DecisionCardProps) {
 
     return (
         <Link href={`/dashboard/decisions/${decision.id}`}>
-            <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl p-5 hover:border-indigo-500/50 hover:bg-slate-900/80 transition-all cursor-pointer group shadow-lg shadow-black/20 hover:shadow-indigo-500/10">
+            <motion.div
+                whileHover={{ y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl p-5 hover:border-indigo-500/50 hover:bg-slate-900/80 transition-all cursor-pointer group shadow-lg shadow-black/20 hover:shadow-indigo-500/10"
+            >
                 <div className="flex items-start justify-between mb-4">
                     <h3 className="text-lg font-bold text-white group-hover:text-indigo-400 transition-colors flex-1 font-outfit truncate pr-4">
                         {decision.title}
                     </h3>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                         {decision.is_locked && (
                             <span className="flex-shrink-0 text-slate-500" title="Locked">
-                                🔒
+                                <Lock className="w-4 h-4" />
                             </span>
                         )}
                         {decision.ai_structured && (
-                            <span className="flex-shrink-0 text-violet-400 animate-pulse" title="AI-structured">
-                                ✨
-                            </span>
+                            <motion.span
+                                animate={{ opacity: [1, 0.5, 1] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                className="flex-shrink-0 text-violet-400"
+                                title="AI-structured"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                            </motion.span>
                         )}
                     </div>
                 </div>
@@ -68,11 +81,13 @@ export function DecisionCard({ decision }: DecisionCardProps) {
                     <div className="mt-4 flex items-center gap-2">
                         <span className="text-[10px] uppercase tracking-wider text-slate-500">Confidence</span>
                         <div className="flex-1 bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                            <div
-                                className={`h-full rounded-full transition-all ${decision.confidence_level >= 8 ? 'bg-emerald-500' :
-                                        decision.confidence_level >= 5 ? 'bg-yellow-500' : 'bg-red-500'
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${decision.confidence_level * 10}%` }}
+                                transition={{ duration: 0.5, delay: 0.2 }}
+                                className={`h-full rounded-full ${decision.confidence_level >= 8 ? 'bg-emerald-500' :
+                                    decision.confidence_level >= 5 ? 'bg-yellow-500' : 'bg-red-500'
                                     }`}
-                                style={{ width: `${decision.confidence_level * 10}%` }}
                             />
                         </div>
                         <span className="text-xs font-mono text-slate-300">
@@ -80,7 +95,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
                         </span>
                     </div>
                 )}
-            </div>
+            </motion.div>
         </Link>
     );
 }
