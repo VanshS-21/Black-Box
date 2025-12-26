@@ -164,51 +164,17 @@ async function handleLogCommand(
         );
     }
 
-    // Process synchronously - the function will take a few seconds
-    try {
-        const structured = await structureDecision(decisionText);
+    // CRITICAL FIX: Slack requires a response within 3 seconds!
+    // We must respond immediately with acknowledgement, then process async.
+    // Fire off async processing - this will respond via response_url when done
+    // Using void to explicitly ignore the promise (fire and forget)
+    void processDecisionAsync(userId, decisionText, responseUrl);
 
-        // Save to database
-        const { error: saveError } = await supabase
-            .from('decisions')
-            .insert({
-                user_id: userId,
-                title: structured.title,
-                decision_made: structured.decision_made,
-                context: structured.context,
-                trade_offs: structured.trade_offs,
-                biggest_risk: structured.biggest_risk,
-                stakeholders: structured.stakeholders,
-                confidence_level: structured.confidence_level,
-                tags: structured.tags,
-                original_input: decisionText,
-                ai_structured: true,
-                source: 'slack',
-                source_url: null
-            });
-
-        if (saveError) {
-            console.error('Failed to save decision:', saveError);
-            return NextResponse.json(
-                formatSlackError('Failed to save decision. Please try again.'),
-                { status: 200 }
-            );
-        }
-
-        return NextResponse.json(
-            formatDecisionConfirmation(
-                structured.title,
-                structured.coaching?.coaching_tip || 'Decision logged successfully!'
-            ),
-            { status: 200 }
-        );
-    } catch (error) {
-        console.error('AI structuring failed:', error);
-        return NextResponse.json(
-            formatSlackError('AI processing failed. Please try again.'),
-            { status: 200 }
-        );
-    }
+    // Return immediate acknowledgement to Slack (within 3 seconds)
+    return NextResponse.json({
+        response_type: 'ephemeral',
+        text: '⏳ Processing your decision with AI... You\'ll receive a confirmation shortly.'
+    }, { status: 200 });
 }
 
 // Process decision asynchronously and respond via response_url
