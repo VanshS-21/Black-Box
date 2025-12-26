@@ -708,9 +708,8 @@ export default function HomePage() {
               <ul className="space-y-3">
                 <li><Link href="/privacy" className="text-slate-400 hover:text-white transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="text-slate-400 hover:text-white transition-colors">Terms of Service</Link></li>
-                <li><a href="https://merchant.razorpay.com/policy/RwCVjm6bdiqpML/shipping" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors">Shipping Policy</a></li>
-                <li><a href="https://merchant.razorpay.com/policy/RwCVjm6bdiqpML/refund" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors">Refund Policy</a></li>
-                <li><a href="mailto:support@careerblackbox.com" className="text-slate-400 hover:text-white transition-colors">Contact</a></li>
+                <li><Link href="/refund" className="text-slate-400 hover:text-white transition-colors">Refund Policy</Link></li>
+                <li><Link href="/contact" className="text-slate-400 hover:text-white transition-colors">Contact Us</Link></li>
               </ul>
             </div>
           </div>
