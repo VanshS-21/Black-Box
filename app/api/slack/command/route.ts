@@ -9,9 +9,7 @@ import {
     formatHelpMessage,
     formatLinkSuccess
 } from '@/lib/slack/utils';
-
-// Increase function timeout for AI processing
-export const maxDuration = 30; // 30 seconds (requires Vercel Pro for >10s)
+import { waitUntil } from '@vercel/functions';
 
 // Use service role for Slack bot (no user session)
 const supabase = createClient(
@@ -33,7 +31,7 @@ export async function POST(request: NextRequest) {
             console.error('SLACK_SIGNING_SECRET not configured');
             return NextResponse.json(
                 formatSlackError('Slack integration not configured'),
-                { status: 200 } // Always return 200 to Slack
+                { status: 200 }
             );
         }
 
@@ -55,18 +53,17 @@ export async function POST(request: NextRequest) {
         // Parse command
         const { command, args } = parseSlackCommand(commandText);
 
-        // Handle help command
+        // Handle help command (instant response)
         if (command === 'help') {
             return NextResponse.json(formatHelpMessage(), { status: 200 });
         }
 
-        // Handle link command
+        // Handle link command (instant response)
         if (command === 'link') {
             return await handleLinkCommand(slackUserId, slackTeamId, args);
         }
 
-        // Handle log command - process synchronously
-        // Slack will show "thinking" for up to 30 seconds while we process
+        // Handle log command - uses async processing with waitUntil
         return await handleLogCommand(slackUserId, slackTeamId, args, responseUrl);
 
     } catch (error) {
@@ -90,7 +87,6 @@ async function handleLinkCommand(
         );
     }
 
-    // Find the link record with this code
     const { data: linkRecord, error: findError } = await supabase
         .from('slack_user_links')
         .select('*')
@@ -106,14 +102,13 @@ async function handleLinkCommand(
         );
     }
 
-    // Update the link record with Slack user info
     const { error: updateError } = await supabase
         .from('slack_user_links')
         .update({
             slack_user_id: slackUserId,
             slack_team_id: slackTeamId,
             linked_at: new Date().toISOString(),
-            link_code: null, // Clear the code after use
+            link_code: null,
             link_code_expires_at: null
         })
         .eq('id', linkRecord.id);
@@ -164,10 +159,27 @@ async function handleLogCommand(
         );
     }
 
-    // Process synchronously - Slack shows "thinking" indicator while we work
-    // We have maxDuration=30 seconds to complete this
+    // Use waitUntil to process AI in the background after responding to Slack
+    // This keeps the serverless function alive to complete the async work
+    waitUntil(processDecisionAsync(userId, decisionText, responseUrl));
+
+    // Return immediate acknowledgement to Slack (within 3 seconds)
+    return NextResponse.json({
+        response_type: 'ephemeral',
+        text: '⏳ Processing your decision with AI... You\'ll receive a confirmation in a moment.'
+    }, { status: 200 });
+}
+
+// Background processing function - runs after response is sent
+async function processDecisionAsync(
+    userId: string,
+    decisionText: string,
+    responseUrl: string
+): Promise<void> {
     try {
+        console.log('Starting AI processing for decision...');
         const structured = await structureDecision(decisionText);
+        console.log('AI processing complete, saving to database...');
 
         // Save to database
         const { error: saveError } = await supabase
@@ -190,24 +202,33 @@ async function handleLogCommand(
 
         if (saveError) {
             console.error('Failed to save decision:', saveError);
-            return NextResponse.json(
-                formatSlackError('Failed to save decision. Please try again.'),
-                { status: 200 }
-            );
+            await sendSlackResponse(responseUrl, formatSlackError('Failed to save decision. Please try again.'));
+            return;
         }
 
-        return NextResponse.json(
+        console.log('Decision saved, sending confirmation to Slack...');
+        await sendSlackResponse(
+            responseUrl,
             formatDecisionConfirmation(
                 structured.title,
                 structured.coaching?.coaching_tip || 'Decision logged successfully!'
-            ),
-            { status: 200 }
+            )
         );
     } catch (error) {
         console.error('AI structuring failed:', error);
-        return NextResponse.json(
-            formatSlackError('AI processing failed. Please try again.'),
-            { status: 200 }
-        );
+        await sendSlackResponse(responseUrl, formatSlackError('AI processing failed. Please try again.'));
+    }
+}
+
+async function sendSlackResponse(responseUrl: string, payload: object): Promise<void> {
+    try {
+        const response = await fetch(responseUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        console.log('Slack response_url call status:', response.status);
+    } catch (error) {
+        console.error('Failed to send Slack response:', error);
     }
 }
