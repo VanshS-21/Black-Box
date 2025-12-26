@@ -709,6 +709,7 @@ export default function HomePage() {
                 <li><Link href="/privacy" className="text-slate-400 hover:text-white transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="text-slate-400 hover:text-white transition-colors">Terms of Service</Link></li>
                 <li><Link href="/refund" className="text-slate-400 hover:text-white transition-colors">Refund Policy</Link></li>
+                <li><Link href="/shipping" className="text-slate-400 hover:text-white transition-colors">Shipping Policy</Link></li>
                 <li><Link href="/contact" className="text-slate-400 hover:text-white transition-colors">Contact Us</Link></li>
               </ul>
             </div>
