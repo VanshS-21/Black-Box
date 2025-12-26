@@ -1,6 +1,6 @@
 // Career Black Box Chrome Extension - Popup Script
 
-const API_BASE = 'https://career-black-box.vercel.app';
+const API_BASE = 'https://black-box-flax.vercel.app';
 // For local development: const API_BASE = 'http://localhost:3000';
 
 // DOM Elements

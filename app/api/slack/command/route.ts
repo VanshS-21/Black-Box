@@ -10,6 +10,9 @@ import {
     formatLinkSuccess
 } from '@/lib/slack/utils';
 
+// Increase function timeout for AI processing
+export const maxDuration = 30; // 30 seconds (requires Vercel Pro for >10s)
+
 // Use service role for Slack bot (no user session)
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,7 +65,8 @@ export async function POST(request: NextRequest) {
             return await handleLinkCommand(slackUserId, slackTeamId, args);
         }
 
-        // Handle log command (default)
+        // Handle log command - ALWAYS process synchronously
+        // Slack will show "processing" for up to 30 seconds
         return await handleLogCommand(slackUserId, slackTeamId, args, responseUrl);
 
     } catch (error) {
@@ -81,7 +85,7 @@ async function handleLinkCommand(
 ): Promise<NextResponse> {
     if (!linkCode || linkCode.length !== 6) {
         return NextResponse.json(
-            formatSlackError('Invalid link code. Get your code from Settings at career-black-box.vercel.app'),
+            formatSlackError('Invalid link code. Get your code from Settings at black-box-flax.vercel.app'),
             { status: 200 }
         );
     }
@@ -144,7 +148,7 @@ async function handleLogCommand(
         return NextResponse.json(
             formatSlackError(
                 'Your Slack account is not linked. Run `/logdecision link YOUR_CODE` to connect.\n' +
-                'Get your code at: https://career-black-box.vercel.app/dashboard/settings'
+                'Get your code at: https://black-box-flax.vercel.app/dashboard/settings'
             ),
             { status: 200 }
         );
@@ -160,21 +164,7 @@ async function handleLogCommand(
         );
     }
 
-    // Acknowledge immediately (Slack expects response within 3 seconds)
-    // We'll use the response_url for the actual result
-
-    // Process asynchronously if we have a response URL
-    if (responseUrl) {
-        // Don't await - let it run in background
-        processDecisionAsync(userId, decisionText, responseUrl);
-
-        return NextResponse.json({
-            response_type: 'ephemeral',
-            text: '⏳ Processing your decision with AI...'
-        }, { status: 200 });
-    }
-
-    // Fallback: process synchronously (may timeout)
+    // Process synchronously - the function will take a few seconds
     try {
         const structured = await structureDecision(decisionText);
 
