@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generatePromotionPackage } from '@/lib/ai/gemini';
-import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/upstash-rate-limit';
 
 export async function POST() {
     try {
@@ -13,11 +13,7 @@ export async function POST() {
         }
 
         // Rate limiting for AI endpoints
-        const rateLimit = checkRateLimit(
-            getRateLimitKey(user.id, 'ai:promotion'),
-            RATE_LIMITS.ai.limit,
-            RATE_LIMITS.ai.windowMs
-        );
+        const rateLimit = await checkRateLimit(user.id, 'ai');
 
         if (!rateLimit.allowed) {
             return NextResponse.json(
@@ -25,7 +21,7 @@ export async function POST() {
                     error: 'Too many AI requests. Please wait a moment before trying again.',
                     resetIn: Math.ceil(rateLimit.resetIn / 1000),
                 },
-                { status: 429 }
+                { status: 429, headers: getRateLimitHeaders(rateLimit) }
             );
         }
 

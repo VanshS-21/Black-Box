@@ -1,4 +1,5 @@
 import { AuthProvider } from '@/lib/auth/context';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Outfit } from 'next/font/google';
@@ -43,6 +44,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
         </AuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

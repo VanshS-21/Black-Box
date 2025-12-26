@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/upstash-rate-limit';
 
 export async function GET() {
     try {
@@ -12,16 +12,12 @@ export async function GET() {
         }
 
         // Rate limiting for export (infrequent operation)
-        const rateLimit = checkRateLimit(
-            getRateLimitKey(user.id, 'export'),
-            RATE_LIMITS.export.limit,
-            RATE_LIMITS.export.windowMs
-        );
+        const rateLimit = await checkRateLimit(user.id, 'export');
 
         if (!rateLimit.allowed) {
             return NextResponse.json(
                 { error: 'Too many export requests. Please try again later.' },
-                { status: 429 }
+                { status: 429, headers: getRateLimitHeaders(rateLimit) }
             );
         }
 

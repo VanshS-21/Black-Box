@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createDecisionSchema } from '@/lib/validations/decision';
-import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/upstash-rate-limit';
 import { ZodError } from 'zod';
 
 export async function GET(request: NextRequest) {
@@ -14,21 +14,14 @@ export async function GET(request: NextRequest) {
         }
 
         // Rate limiting
-        const rateLimit = checkRateLimit(
-            getRateLimitKey(user.id, 'decisions:get'),
-            RATE_LIMITS.api.limit,
-            RATE_LIMITS.api.windowMs
-        );
+        const rateLimit = await checkRateLimit(user.id, 'api');
 
         if (!rateLimit.allowed) {
             return NextResponse.json(
                 { error: 'Too many requests. Please try again later.' },
                 {
                     status: 429,
-                    headers: {
-                        'Retry-After': String(Math.ceil(rateLimit.resetIn / 1000)),
-                        'X-RateLimit-Remaining': String(rateLimit.remaining),
-                    }
+                    headers: getRateLimitHeaders(rateLimit),
                 }
             );
         }
@@ -85,16 +78,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limiting
-        const rateLimit = checkRateLimit(
-            getRateLimitKey(user.id, 'decisions:create'),
-            RATE_LIMITS.api.limit,
-            RATE_LIMITS.api.windowMs
-        );
+        const rateLimit = await checkRateLimit(user.id, 'api');
 
         if (!rateLimit.allowed) {
             return NextResponse.json(
                 { error: 'Too many requests. Please try again later.' },
-                { status: 429 }
+                { status: 429, headers: getRateLimitHeaders(rateLimit) }
             );
         }
 

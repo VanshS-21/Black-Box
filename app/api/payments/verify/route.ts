@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { verifyPaymentSignature, PRODUCTS } from '@/lib/payments/razorpay';
-import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/upstash-rate-limit';
 import { z } from 'zod';
 
 const verifyPaymentSchema = z.object({
@@ -24,16 +24,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limiting
-        const rateLimit = checkRateLimit(
-            getRateLimitKey(user.id, 'payments:verify'),
-            RATE_LIMITS.api.limit,
-            RATE_LIMITS.api.windowMs
-        );
+        const rateLimit = await checkRateLimit(user.id, 'payments');
 
         if (!rateLimit.allowed) {
             return NextResponse.json(
                 { error: 'Too many requests. Please try again later.' },
-                { status: 429 }
+                { status: 429, headers: getRateLimitHeaders(rateLimit) }
             );
         }
 
