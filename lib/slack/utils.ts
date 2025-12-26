@@ -95,7 +95,7 @@ export function formatDecisionConfirmation(title: string, coachingTip: string): 
                 elements: [
                     {
                         type: 'mrkdwn',
-                        text: '<https://career-black-box.vercel.app/dashboard|View in Dashboard>'
+                        text: '<https://black-box-flax.vercel.app/dashboard|View in Dashboard>'
                     }
                 ]
             }
@@ -151,7 +151,7 @@ export function formatHelpMessage(): object {
                 elements: [
                     {
                         type: 'mrkdwn',
-                        text: '🔗 <https://career-black-box.vercel.app/dashboard/settings|Get your link code>'
+                        text: '🔗 <https://black-box-flax.vercel.app/dashboard/settings|Get your link code>'
                     }
                 ]
             }
