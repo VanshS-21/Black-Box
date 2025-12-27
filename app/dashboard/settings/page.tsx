@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, AlertTriangle, Lightbulb, Trash2, MessageSquare, Copy, Check, RefreshCw, Unlink } from 'lucide-react';
+import { ArrowLeft, Download, AlertTriangle, Lightbulb, Trash2, MessageSquare, Copy, Check, RefreshCw, Unlink, Github } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -31,9 +31,19 @@ export default function SettingsPage() {
     const [copiedCode, setCopiedCode] = useState(false);
     const [generatingCode, setGeneratingCode] = useState(false);
 
+    // GitHub integration state
+    const [githubStatus, setGithubStatus] = useState<'loading' | 'unlinked' | 'pending' | 'linked'>('loading');
+    const [githubLinkCode, setGithubLinkCode] = useState('');
+    const [githubExpiresAt, setGithubExpiresAt] = useState('');
+    const [githubUsername, setGithubUsername] = useState('');
+    const [githubLinkedAt, setGithubLinkedAt] = useState('');
+    const [copiedGithubCode, setCopiedGithubCode] = useState(false);
+    const [generatingGithubCode, setGeneratingGithubCode] = useState(false);
+
     // Fetch Slack link status on mount
     useEffect(() => {
         fetchSlackStatus();
+        fetchGithubStatus();
     }, []);
 
     const fetchSlackStatus = async () => {
@@ -90,6 +100,73 @@ export default function SettingsPage() {
         navigator.clipboard.writeText(slackLinkCode);
         setCopiedCode(true);
         setTimeout(() => setCopiedCode(false), 2000);
+    };
+
+    // GitHub integration functions
+    const fetchGithubStatus = async () => {
+        try {
+            const response = await fetch('/api/github/link');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.linked) {
+                    setGithubStatus('linked');
+                    setGithubUsername(data.githubUsername || '');
+                    setGithubLinkedAt(data.linkedAt || '');
+                } else if (data.linkCode) {
+                    setGithubStatus('pending');
+                    setGithubLinkCode(data.linkCode);
+                    setGithubExpiresAt(data.linkCodeExpiresAt || '');
+                } else {
+                    setGithubStatus('unlinked');
+                }
+            } else {
+                setGithubStatus('unlinked');
+            }
+        } catch (err) {
+            console.error('Failed to fetch GitHub status:', err);
+            setGithubStatus('unlinked');
+        }
+    };
+
+    const generateGithubCode = async () => {
+        setGeneratingGithubCode(true);
+        try {
+            const response = await fetch('/api/github/link', { method: 'POST' });
+            if (response.ok) {
+                const data = await response.json();
+                setGithubStatus('pending');
+                setGithubLinkCode(data.code);
+                setGithubExpiresAt(data.expiresAt);
+                showToast('GitHub link code generated!', 'success');
+            } else {
+                showToast('Failed to generate code', 'error');
+            }
+        } catch (err) {
+            showToast('Failed to generate code', 'error');
+        } finally {
+            setGeneratingGithubCode(false);
+        }
+    };
+
+    const unlinkGithub = async () => {
+        try {
+            const response = await fetch('/api/github/link', { method: 'DELETE' });
+            if (response.ok) {
+                setGithubStatus('unlinked');
+                setGithubLinkCode('');
+                setGithubUsername('');
+                setGithubLinkedAt('');
+                showToast('GitHub unlinked', 'success');
+            }
+        } catch (err) {
+            showToast('Failed to unlink GitHub', 'error');
+        }
+    };
+
+    const copyGithubLinkCode = () => {
+        navigator.clipboard.writeText(githubLinkCode);
+        setCopiedGithubCode(true);
+        setTimeout(() => setCopiedGithubCode(false), 2000);
     };
 
     const handleExport = async () => {
@@ -370,6 +447,91 @@ export default function SettingsPage() {
                                         <Button onClick={generateSlackCode} variant="primary" disabled={generatingCode}>
                                             <MessageSquare className="w-4 h-4 mr-2" />
                                             {generatingCode ? 'Generating...' : 'Connect Slack'}
+                                        </Button>
+                                    </motion.div>
+                                </div>
+                            )}
+                        </div>
+                    </FadeIn>
+
+                    {/* GitHub Integration Section */}
+                    <FadeIn delay={0.27}>
+                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
+                                    <Github className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-semibold text-white font-outfit">GitHub Integration</h2>
+                                    <p className="text-sm text-slate-400">Capture decisions from PR comments</p>
+                                </div>
+                            </div>
+
+                            {githubStatus === 'loading' && (
+                                <div className="text-slate-400">Loading...</div>
+                            )}
+
+                            {githubStatus === 'linked' && (
+                                <div className="space-y-4">
+                                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                                        <div className="flex items-center gap-2 text-green-400">
+                                            <Check className="w-5 h-5" />
+                                            <span className="font-medium">Connected to GitHub</span>
+                                        </div>
+                                        <p className="text-sm text-green-300/70 mt-1">
+                                            @{githubUsername} • Linked {githubLinkedAt ? new Date(githubLinkedAt).toLocaleDateString() : 'recently'}
+                                        </p>
+                                    </div>
+                                    <p className="text-slate-400 text-sm">
+                                        Comment <code className="bg-slate-800 px-2 py-0.5 rounded text-violet-400">@blackbox</code> on any PR to capture a decision.
+                                    </p>
+                                    <div className="bg-slate-800/50 rounded-lg p-4">
+                                        <p className="text-slate-300 text-sm mb-2">Example PR comment:</p>
+                                        <code className="text-violet-400 text-xs">@blackbox Decided to use Redis for caching because...</code>
+                                    </div>
+                                    <Button onClick={unlinkGithub} variant="outline" className="border-red-500/20 text-red-400 hover:bg-red-500/10">
+                                        <Unlink className="w-4 h-4 mr-2" /> Unlink GitHub
+                                    </Button>
+                                </div>
+                            )}
+
+                            {githubStatus === 'pending' && (
+                                <div className="space-y-4">
+                                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                                        <p className="text-amber-400 font-medium mb-2">Your link code:</p>
+                                        <div className="flex items-center gap-2">
+                                            <code className="bg-slate-800 px-4 py-2 rounded-lg text-2xl font-mono text-white tracking-widest">
+                                                {githubLinkCode}
+                                            </code>
+                                            <Button onClick={copyGithubLinkCode} variant="ghost" size="sm">
+                                                {copiedGithubCode ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                                            </Button>
+                                        </div>
+                                        <p className="text-sm text-amber-300/70 mt-2">
+                                            Expires in {githubExpiresAt ? Math.max(0, Math.round((new Date(githubExpiresAt).getTime() - Date.now()) / 60000)) : 15} minutes
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-800/50 rounded-lg p-4">
+                                        <p className="text-slate-300 text-sm mb-2">To complete linking, use our Chrome extension on GitHub or call:</p>
+                                        <code className="text-violet-400 text-xs block">POST /api/github/verify</code>
+                                        <code className="text-slate-500 text-xs block mt-1">{'{ linkCode, githubUserId, githubUsername }'}</code>
+                                    </div>
+                                    <Button onClick={generateGithubCode} variant="outline" disabled={generatingGithubCode}>
+                                        <RefreshCw className={`w-4 h-4 mr-2 ${generatingGithubCode ? 'animate-spin' : ''}`} />
+                                        Generate New Code
+                                    </Button>
+                                </div>
+                            )}
+
+                            {githubStatus === 'unlinked' && (
+                                <div className="space-y-4">
+                                    <p className="text-slate-400">
+                                        Connect your GitHub account to capture decisions when you comment <code className="bg-slate-800 px-2 py-0.5 rounded text-violet-400">@blackbox</code> on PRs and issues.
+                                    </p>
+                                    <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                                        <Button onClick={generateGithubCode} variant="primary" disabled={generatingGithubCode}>
+                                            <Github className="w-4 h-4 mr-2" />
+                                            {generatingGithubCode ? 'Generating...' : 'Connect GitHub'}
                                         </Button>
                                     </motion.div>
                                 </div>

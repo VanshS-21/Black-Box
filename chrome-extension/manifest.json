@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Career Black Box",
     "description": "Log decisions in 5 seconds. Right-click anywhere to capture your engineering decisions.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "action": {
         "default_popup": "popup.html",
         "default_title": "Career Black Box - Log a Decision"
@@ -14,7 +14,9 @@
     ],
     "host_permissions": [
         "https://career-black-box.vercel.app/*",
-        "http://localhost:3000/*"
+        "https://black-box-flax.vercel.app/*",
+        "http://localhost:3000/*",
+        "https://github.com/*"
     ],
     "background": {
         "service_worker": "background.js"
@@ -23,10 +25,20 @@
         {
             "matches": [
                 "https://career-black-box.vercel.app/*",
+                "https://black-box-flax.vercel.app/*",
                 "http://localhost:3000/*"
             ],
             "js": [
                 "content.js"
+            ],
+            "run_at": "document_end"
+        },
+        {
+            "matches": [
+                "https://github.com/*"
+            ],
+            "js": [
+                "github-content.js"
             ],
             "run_at": "document_end"
         }
