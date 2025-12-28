@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Flame, Tag, BarChart3 } from 'lucide-react';
 
@@ -14,26 +14,66 @@ interface AnalyticsData {
     avgConfidence: number | null;
 }
 
+// Cache key and stale time for client-side caching
+const CACHE_KEY = 'dashboard_analytics_cache';
+const CACHE_STALE_TIME = 60 * 1000; // 60 seconds
+
+interface CachedData {
+    data: AnalyticsData;
+    timestamp: number;
+}
+
 export function DashboardAnalytics() {
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchAnalytics = async () => {
+    const fetchAnalytics = useCallback(async (skipCache = false) => {
+        // Check cache first
+        if (!skipCache) {
             try {
-                const response = await fetch('/api/analytics/personal');
-                if (response.ok) {
-                    const analytics = await response.json();
-                    setData(analytics);
+                const cached = sessionStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    const { data: cachedData, timestamp }: CachedData = JSON.parse(cached);
+                    const isStale = Date.now() - timestamp > CACHE_STALE_TIME;
+
+                    if (!isStale) {
+                        setData(cachedData);
+                        setLoading(false);
+                        return;
+                    }
+                    // Use stale data while fetching fresh
+                    setData(cachedData);
                 }
-            } catch (error) {
-                console.error('Failed to fetch analytics:', error);
-            } finally {
-                setLoading(false);
+            } catch {
+                // Ignore cache errors
             }
-        };
-        fetchAnalytics();
+        }
+
+        try {
+            const response = await fetch('/api/analytics/personal');
+            if (response.ok) {
+                const analytics = await response.json();
+                setData(analytics);
+                // Cache the result
+                try {
+                    sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                        data: analytics,
+                        timestamp: Date.now(),
+                    }));
+                } catch {
+                    // Ignore storage errors
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch analytics:', error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchAnalytics();
+    }, [fetchAnalytics]);
 
     if (loading) {
         return (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Filter, ChevronDown, X, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
@@ -9,7 +10,6 @@ import { Decision } from '@/lib/supabase/client';
 import { DecisionCard } from '@/components/DecisionCard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { PromotionPackageGenerator } from '@/components/PromotionPackageGenerator';
 import { WeeklyUpdateGenerator } from '@/components/WeeklyUpdateGenerator';
 import { QuickReframe } from '@/components/QuickReframe';
 import { DemoDecisions } from '@/components/DemoDecisions';
@@ -18,6 +18,20 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StaggerContainer, StaggerItem, FadeIn } from '@/components/ui/FadeIn';
 import { DashboardAnalytics } from '@/components/DashboardAnalytics';
 import { DashboardHeader } from '@/components/DashboardHeader';
+
+// Lazy load heavy components to reduce initial bundle
+const PromotionPackageGenerator = dynamic(
+    () => import('@/components/PromotionPackageGenerator').then(mod => mod.PromotionPackageGenerator),
+    {
+        loading: () => (
+            <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl p-4 animate-pulse">
+                <div className="h-4 w-32 bg-slate-700 rounded mb-3" />
+                <div className="h-8 bg-slate-800 rounded" />
+            </div>
+        ),
+        ssr: false, // PDF generation uses browser APIs
+    }
+);
 
 const INITIAL_VISIBLE_COUNT = 6;
 const LOAD_MORE_COUNT = 6;
