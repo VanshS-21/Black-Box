@@ -46,9 +46,9 @@ export const options = {
             'p(99)<3000',  // 99% under 3s
         ],
 
-        // Error rate threshold (STRICTER)
-        http_req_failed: ['rate<0.05'],    // <5% failures during stress
-        errors: ['rate<0.05'],
+        // Error rate threshold (realistic for serverless cold starts)
+        http_req_failed: ['rate<0.02'],    // <2% failures during stress
+        errors: ['rate<0.02'],
 
         // Custom metric thresholds (HARSHER)
         health_latency: ['p(95)<500'],     // Health check under 500ms
@@ -63,9 +63,11 @@ export default function () {
 
         const success = check(res, {
             'health: status 200': (r) => r.status === 200,
-            'health: DB ok': (r) => {
+            'health: status ok': (r) => {
                 try {
-                    return JSON.parse(r.body).services?.database?.status === 'ok';
+                    const body = JSON.parse(r.body);
+                    // Fast health check returns status: 'ok' without DB check
+                    return body.status === 'ok';
                 } catch {
                     return false;
                 }
