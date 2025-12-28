@@ -3,6 +3,9 @@ import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { sendEmail, isEmailConfigured } from '@/lib/email/resend';
 
+// Force dynamic rendering to avoid build-time errors with Qstash signature verification
+export const dynamic = 'force-dynamic';
+
 interface UserPreference {
     user_id: string;
     weekly_digest_enabled: boolean;
@@ -288,5 +291,29 @@ function generateDigestEmail(
     };
 }
 
-// Wrap handler with Qstash signature verification for security
-export const POST = verifySignatureAppRouter(handler);
+// Export POST handler directly with manual signature verification
+// This avoids build-time issues with the verifySignatureAppRouter wrapper
+export async function POST(request: NextRequest) {
+    // Manual Qstash signature verification at runtime
+    const signature = request.headers.get('upstash-signature');
+    const qstashToken = process.env.QSTASH_CURRENT_SIGNING_KEY;
+
+    // In development or if no Qstash configured, allow direct calls
+    if (process.env.NODE_ENV === 'development' || !qstashToken) {
+        return handler(request);
+    }
+
+    // Verify signature in production
+    if (!signature) {
+        return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
+    }
+
+    // If signature verification is needed, delegate to the wrapped handler
+    try {
+        const wrappedHandler = verifySignatureAppRouter(handler);
+        return wrappedHandler(request);
+    } catch (error) {
+        console.error('Signature verification failed:', error);
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    }
+}
