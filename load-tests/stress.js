@@ -39,20 +39,20 @@ export const options = {
     ],
 
     thresholds: {
-        // Response time thresholds (adjusted for Vercel serverless)
+        // Response time thresholds (HARSHER - post-optimization)
         http_req_duration: [
-            'p(50)<500',   // 50% under 500ms
-            'p(95)<2000',  // 95% under 2s (allows for cold starts)
-            'p(99)<5000',  // 99% under 5s
+            'p(50)<300',   // 50% under 300ms
+            'p(95)<1500',  // 95% under 1.5s
+            'p(99)<3000',  // 99% under 3s
         ],
 
-        // Error rate threshold
-        http_req_failed: ['rate<0.10'],    // <10% failures during stress
-        errors: ['rate<0.10'],
+        // Error rate threshold (STRICTER)
+        http_req_failed: ['rate<0.05'],    // <5% failures during stress
+        errors: ['rate<0.05'],
 
-        // Custom metric thresholds (adjusted for serverless)
-        health_latency: ['p(95)<1000'],    // Health check under 1s
-        page_latency: ['p(95)<3000'],      // Pages under 3s (includes SSR)
+        // Custom metric thresholds (HARSHER)
+        health_latency: ['p(95)<500'],     // Health check under 500ms
+        page_latency: ['p(95)<2000'],      // Pages under 2s
     },
 };
 
