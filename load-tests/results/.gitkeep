@@ -1,0 +1,5 @@
+# Results Directory
+
+Load test results are saved here automatically.
+
+This directory is git-ignored to prevent large JSON files from being committed.

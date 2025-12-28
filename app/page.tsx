@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Brain,
@@ -31,7 +32,20 @@ import { Button } from '@/components/ui/Button';
 import { Floating } from '@/components/ui/Floating';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/FadeIn';
 import { useAuth } from '@/lib/auth/context';
-import { LandingQuickReframe } from '@/components/LandingQuickReframe';
+
+// Lazy load heavy components below the fold
+const LandingQuickReframe = dynamic(
+  () => import('@/components/LandingQuickReframe').then(mod => mod.LandingQuickReframe),
+  {
+    loading: () => (
+      <div className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-2xl p-8 animate-pulse">
+        <div className="h-6 w-48 bg-slate-700 rounded mb-4" />
+        <div className="h-32 bg-slate-800 rounded" />
+      </div>
+    ),
+    ssr: false, // Component uses heavy client-side AI features
+  }
+);
 
 export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
@@ -217,7 +231,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="md:hidden border-t border-white/5 py-4 space-y-4 overflow-hidden"
+                className="md:hidden mt-4 bg-slate-900/95 backdrop-blur-xl rounded-xl border border-white/10 p-4 space-y-4 overflow-hidden shadow-2xl"
               >
                 <div className="flex flex-col gap-2">
                   <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">Features</a>
@@ -227,7 +241,7 @@ export default function HomePage() {
                   <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">Pricing</a>
                   <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">FAQ</a>
                 </div>
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-2 border-t border-white/10">
                   {user ? (
                     <Link href="/dashboard" className="flex-1">
                       <Button className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold">
@@ -238,7 +252,7 @@ export default function HomePage() {
                   ) : (
                     <>
                       <Link href="/auth/login" className="flex-1">
-                        <Button variant="ghost" className="w-full text-slate-300 hover:text-white hover:bg-white/5">
+                        <Button variant="ghost" className="w-full text-slate-300 hover:text-white hover:bg-white/5 border border-white/10">
                           Sign In
                         </Button>
                       </Link>

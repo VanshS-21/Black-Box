@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:load:smoke": "k6 run load-tests/smoke.js",
+    "test:load:stress": "k6 run load-tests/stress.js",
+    "test:load:api": "k6 run load-tests/api-perf.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

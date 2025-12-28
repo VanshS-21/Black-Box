@@ -5,8 +5,16 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Outfit } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap', // Prevents FOIT
+});
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap', // Prevents FOIT
+});
 
 export const metadata: Metadata = {
   title: 'Career Black Box - AI Decision Journal for Engineers',
