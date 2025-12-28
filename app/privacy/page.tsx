@@ -37,6 +37,36 @@ export default function PrivacyPage() {
                             <li>To communicate with you about your account</li>
                         </ul>
 
+                        <h2 className="text-2xl font-semibold text-white mt-8 mb-3 font-outfit">Legal Basis for Processing</h2>
+                        <p className="text-slate-300 mb-4">
+                            We process your personal data based on the following legal grounds:
+                        </p>
+                        <ul className="list-disc list-inside text-slate-300 mb-4 space-y-2">
+                            <li><strong className="text-slate-200">Contract Performance:</strong> Processing necessary to provide the service you signed up for</li>
+                            <li><strong className="text-slate-200">Legitimate Interest:</strong> Improving our service and ensuring security</li>
+                            <li><strong className="text-slate-200">Consent:</strong> Marketing communications (opt-in only)</li>
+                        </ul>
+
+                        <h2 className="text-2xl font-semibold text-white mt-8 mb-3 font-outfit">Data Retention</h2>
+                        <p className="text-slate-300 mb-4">
+                            We retain your data for as long as your account is active. Specifically:
+                        </p>
+                        <ul className="list-disc list-inside text-slate-300 mb-4 space-y-2">
+                            <li><strong className="text-slate-200">Account Data:</strong> Retained until you delete your account</li>
+                            <li><strong className="text-slate-200">Decision Data:</strong> Retained until you delete individual decisions or your account</li>
+                            <li><strong className="text-slate-200">Usage Logs:</strong> Retained for 90 days for security and troubleshooting</li>
+                            <li><strong className="text-slate-200">Payment Records:</strong> Retained for 7 years as required by tax regulations</li>
+                        </ul>
+                        <p className="text-slate-300 mb-4">
+                            Upon account deletion, all personal data is permanently erased within 30 days, except where retention is required by law.
+                        </p>
+
+                        <h2 className="text-2xl font-semibold text-white mt-8 mb-3 font-outfit">Cookies & Tracking</h2>
+                        <p className="text-slate-300 mb-4">
+                            We use only essential cookies required for authentication and security.
+                            We do not use advertising or tracking cookies. Third-party analytics (Vercel Speed Insights) may collect anonymous performance metrics.
+                        </p>
+
                         <h2 className="text-2xl font-semibold text-white mt-8 mb-3 font-outfit">Data Security</h2>
                         <p className="text-slate-300 mb-4">
                             We use industry-standard security measures including encryption, secure authentication
@@ -50,18 +80,24 @@ export default function PrivacyPage() {
                             <li><strong className="text-slate-200">Google Gemini AI:</strong> AI-powered decision structuring</li>
                             <li><strong className="text-slate-200">Razorpay:</strong> Payment processing (when applicable)</li>
                             <li><strong className="text-slate-200">Vercel:</strong> Hosting</li>
+                            <li><strong className="text-slate-200">Resend:</strong> Email notifications</li>
+                            <li><strong className="text-slate-200">Sentry:</strong> Error monitoring (anonymized)</li>
                         </ul>
 
                         <h2 className="text-2xl font-semibold text-white mt-8 mb-3 font-outfit">Your Rights</h2>
+                        <p className="text-slate-300 mb-2">Under GDPR and similar regulations, you have the right to:</p>
                         <ul className="list-disc list-inside text-slate-300 mb-4 space-y-2">
-                            <li>Access and export your data anytime</li>
+                            <li>Access and export your data anytime (Settings → Export Data)</li>
                             <li>Delete your account and all associated data</li>
                             <li>Update or correct your information</li>
+                            <li>Object to or restrict processing</li>
+                            <li>Data portability (export in JSON format)</li>
+                            <li>Withdraw consent at any time</li>
                         </ul>
 
                         <h2 className="text-2xl font-semibold text-white mt-8 mb-3 font-outfit">Contact Us</h2>
                         <p className="text-slate-300 mb-4">
-                            If you have questions about this Privacy Policy, please contact us at{' '}
+                            If you have questions about this Privacy Policy or wish to exercise your rights, please contact us at{' '}
                             <a href="mailto:support@careerblackbox.com" className="text-indigo-400 hover:text-indigo-300 hover:underline">
                                 support@careerblackbox.com
                             </a>

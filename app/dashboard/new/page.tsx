@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Sparkles, PenLine, Save, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Sparkles, PenLine, Save, ArrowLeft, CheckCircle, Box, AlertTriangle, Scale, Siren, FileText } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 import { VibeInput } from '@/components/VibeInput';
 import { CoachingFeedback } from '@/components/CoachingFeedback';
@@ -14,6 +13,9 @@ import { Textarea } from '@/components/ui/Textarea';
 import { StructuredDecision } from '@/lib/ai/gemini';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { useToast } from '@/components/ui/Toast';
+import { TeamVisibilityToggle, TeamModeBorder } from '@/components/TeamVisibilityToggle';
+import { DECISION_TEMPLATES, DecisionTemplate, getTemplateById } from '@/lib/templates/decision-templates';
+import { DashboardHeader } from '@/components/DashboardHeader';
 
 export default function NewDecisionPage() {
     const router = useRouter();
@@ -34,6 +36,66 @@ export default function NewDecisionPage() {
 
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+
+    // Template icon mapping
+    const templateIcons: Record<string, any> = {
+        'adr': Box,
+        'tech-debt': AlertTriangle,
+        'feature-tradeoff': Scale,
+        'incident': Siren,
+    };
+
+    // Apply template when selected
+    const applyTemplate = (templateId: string) => {
+        const template = getTemplateById(templateId);
+        if (template) {
+            setSelectedTemplate(templateId);
+            setTitle(template.fields.title);
+            setContext(template.fields.context);
+            setDecisionMade(template.fields.decision_made);
+            setTradeOffs(template.fields.trade_offs || '');
+            setBiggestRisk(template.fields.biggest_risk || '');
+            setStakeholders(template.fields.stakeholders || '');
+            setTags(template.fields.tags.join(', '));
+            setMode('manual'); // Switch to manual to show all fields
+        }
+    };
+
+    // Team visibility state
+    const [teamId, setTeamId] = useState<string | null>(null);
+    const [isTeamVisible, setIsTeamVisible] = useState(false);
+    const [userTeams, setUserTeams] = useState<{ id: string; name: string }[]>([]);
+
+    // Fetch user's teams on mount
+    useEffect(() => {
+        const fetchTeams = async () => {
+            try {
+                const response = await fetch('/api/teams');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Get teams user is a member of
+                    const teams = data.memberTeams?.map((mt: { teams: { id: string; name: string } }) => mt.teams) || [];
+                    setUserTeams(teams);
+                    // If user has exactly one team, pre-select it but keep private by default
+                    if (teams.length === 1) {
+                        setTeamId(teams[0].id);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch teams:', err);
+            }
+        };
+        fetchTeams();
+    }, []);
+
+    // Handle team visibility toggle
+    const handleTeamVisibilityToggle = (visible: boolean) => {
+        setIsTeamVisible(visible);
+        if (!visible) {
+            // Keep teamId for easy re-enabling, but decision won't be shared
+        }
+    };
 
     const handleAIStructured = (data: StructuredDecision & { original_input: string }) => {
         setStructured(data);
@@ -80,6 +142,7 @@ export default function NewDecisionPage() {
                     tags: tagArray,
                     original_input: structured?.original_input || null,
                     ai_structured: !!structured,
+                    team_id: isTeamVisible && teamId ? teamId : null,
                 }),
             });
 
@@ -102,21 +165,7 @@ export default function NewDecisionPage() {
             <div className="fixed top-0 left-0 w-full h-[500px] bg-indigo-900/20 blur-[120px] pointer-events-none" />
             <div className="fixed bottom-0 right-0 w-full h-[500px] bg-violet-900/10 blur-[100px] pointer-events-none" />
 
-            <header className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-xl font-bold text-white font-outfit">New Decision</h1>
-                            <p className="text-sm text-slate-400">Add a new entry to your flight recorder</p>
-                        </div>
-                        <Link href="/dashboard">
-                            <Button variant="outline" className="border-white/10 text-slate-300 hover:bg-white/5 hover:text-white">
-                                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-            </header>
+            <DashboardHeader showBack pageTitle="New Decision" pageSubtitle="Add a new entry to your flight recorder" />
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
                 <FadeIn>
@@ -146,6 +195,37 @@ export default function NewDecisionPage() {
                                 >
                                     <PenLine className="w-4 h-4" /> Manual Entry
                                 </motion.button>
+                            </div>
+                        )}
+
+                        {/* Template Selector - Only show when not already structured */}
+                        {!structured && (
+                            <div className="mb-6">
+                                <p className="text-sm text-slate-400 mb-3">
+                                    <FileText className="w-4 h-4 inline mr-1" />
+                                    Or start from a template:
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {DECISION_TEMPLATES.map((template) => {
+                                        const Icon = templateIcons[template.id] || FileText;
+                                        return (
+                                            <motion.button
+                                                key={template.id}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => applyTemplate(template.id)}
+                                                className={`px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors ${selectedTemplate === template.id
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/10'
+                                                    }`}
+                                                title={template.description}
+                                            >
+                                                <Icon className="w-4 h-4" />
+                                                {template.name.split('(')[0].trim()}
+                                            </motion.button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
 
@@ -288,6 +368,31 @@ export default function NewDecisionPage() {
                                         className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 focus:border-indigo-500/50"
                                     />
                                 </div>
+
+                                {/* Team Visibility Toggle - only shown if user has teams */}
+                                {userTeams.length > 0 && (
+                                    <div className="pt-4 border-t border-white/10">
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                            Visibility
+                                        </label>
+                                        <TeamVisibilityToggle
+                                            isTeamVisible={isTeamVisible}
+                                            onToggle={handleTeamVisibilityToggle}
+                                            teamName={userTeams.find(t => t.id === teamId)?.name}
+                                        />
+                                        {userTeams.length > 1 && isTeamVisible && (
+                                            <select
+                                                value={teamId || ''}
+                                                onChange={(e) => setTeamId(e.target.value || null)}
+                                                className="mt-2 w-full bg-black/30 border border-white/10 text-white rounded-lg px-3 py-2 text-sm"
+                                            >
+                                                {userTeams.map(team => (
+                                                    <option key={team.id} value={team.id}>{team.name}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
+                                )}
 
                                 {error && (
                                     <motion.div

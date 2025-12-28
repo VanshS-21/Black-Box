@@ -153,9 +153,6 @@ CRITICAL: The coaching.impact_reframe should sound like a Senior/Staff engineer 
 }
 
 
-/**
- * Generate a promotion package from user's decisions
- */
 export async function generatePromotionPackage(decisions: Array<{
     title: string;
     decision_made: string;
@@ -209,5 +206,128 @@ Tone: Confident, data-driven, promotion-ready.`;
             throw error;
         }
         throw new Error('An unexpected error occurred while generating your promotion package.');
+    }
+}
+
+/**
+ * Quick reframe result for instant gratification
+ */
+export interface QuickReframeResult {
+    original: string;
+    reframed: string;
+    weak_phrases: string[];
+    power_phrases: string[];
+    tip: string;
+}
+
+/**
+ * Quick reframe - instant "Engineer to Executive" translation
+ * This is the instant dopamine hit: paste text, get executive-speak back in < 3 seconds
+ */
+export async function quickReframe(text: string): Promise<QuickReframeResult> {
+    const model = getGeminiModel();
+
+    const prompt = `You are an expert at translating engineer-speak into executive-speak.
+
+Input: "${text}"
+
+Transform this into a promotion-ready statement that emphasizes BUSINESS IMPACT.
+
+Examples of what I want:
+- "Fixed a bug" → "Eliminated checkout failures affecting 2,000+ daily users, recovering estimated $50K/month in lost revenue"
+- "Refactored the backend" → "Reduced API latency by 40% through architectural optimization, improving user experience across all mobile clients"
+- "Improved performance" → "Achieved 3x throughput improvement in payment processing pipeline, enabling Black Friday traffic handling"
+
+Return ONLY valid JSON (no markdown):
+{
+    "reframed": "The executive-speak version with specific (hypothetical if needed) metrics and business impact",
+    "weak_phrases": ["list of 1-2 vague phrases from input"],
+    "power_phrases": ["corresponding power phrases that quantify impact"],
+    "tip": "One quick tip to make their writing more impactful"
+}`;
+
+    try {
+        const result = await withTimeout(
+            model.generateContent(prompt),
+            15000, // Quick - 15 second timeout max
+            'AI request timed out. Please try again.'
+        );
+        const response = await result.response;
+        const responseText = response.text();
+
+        // Clean up response
+        const cleanedText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+        try {
+            const parsed = JSON.parse(cleanedText);
+
+            return {
+                original: text,
+                reframed: String(parsed.reframed || text),
+                weak_phrases: Array.isArray(parsed.weak_phrases)
+                    ? parsed.weak_phrases.slice(0, 3).map((p: unknown) => String(p))
+                    : [],
+                power_phrases: Array.isArray(parsed.power_phrases)
+                    ? parsed.power_phrases.slice(0, 3).map((p: unknown) => String(p))
+                    : [],
+                tip: String(parsed.tip || 'Add specific metrics to strengthen your impact.'),
+            };
+        } catch (parseError) {
+            console.error('Failed to parse quick reframe response:', cleanedText);
+            throw new Error('Failed to reframe text. Please try again.');
+        }
+    } catch (error) {
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error('An unexpected error occurred while reframing your text.');
+    }
+}
+
+/**
+ * Generate a weekly update from recent decisions
+ * Lower bar than promotion package - works with just 1 decision
+ */
+export async function generateWeeklyUpdate(decisions: Array<{
+    title: string;
+    decision_made: string;
+    context: string;
+    created_at: string;
+}>): Promise<string> {
+    const model = getGeminiModel();
+
+    const decisionData = decisions.map((d, idx) => `
+${idx + 1}. ${d.title}
+   What: ${d.decision_made}
+   Context: ${d.context}
+   Date: ${new Date(d.created_at).toLocaleDateString()}
+`).join('\n');
+
+    const prompt = `You are helping an engineer write their weekly update for their team/manager.
+
+Their recent decisions:
+${decisionData}
+
+Write a SHORT, Slack-ready weekly update (max 200 words) that:
+1. Summarizes what they accomplished
+2. Highlights the most impactful decision
+3. Uses executive-friendly language (impact over implementation)
+
+Format: Casual but professional. Ready to paste into Slack.
+Start with "This week I..." or similar.`;
+
+    try {
+        const result = await withTimeout(
+            model.generateContent(prompt),
+            20000,
+            'AI request timed out. Please try again.'
+        );
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error('An unexpected error occurred while generating your weekly update.');
     }
 }

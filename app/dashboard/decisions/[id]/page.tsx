@@ -242,10 +242,16 @@ export default function DecisionDetailPage() {
             <header className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl no-print">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex items-center gap-4">
+                            <Link href="/" className="flex items-center gap-2 group">
+                                <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-md shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow" />
+                                <span className="text-lg font-bold text-white tracking-tight font-outfit group-hover:text-indigo-400 transition-colors hidden sm:inline">Career Black Box</span>
+                            </Link>
+                            <div className="h-4 w-[1px] bg-white/10" />
                             <Link href="/dashboard">
                                 <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white hover:bg-white/5">
-                                    <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+                                    <ArrowLeft className="w-4 h-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Dashboard</span>
                                 </Button>
                             </Link>
                         </div>

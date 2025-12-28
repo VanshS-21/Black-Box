@@ -2,26 +2,49 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Download, AlertTriangle, Lightbulb, Trash2, MessageSquare, Copy, Check, RefreshCw, Unlink, Github } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Lock, Link2, Users, Bell, AlertTriangle, Download, Trash2, MessageSquare, Copy, Check, RefreshCw, Unlink, Github, Mail, Lightbulb } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { FadeIn } from '@/components/ui/FadeIn';
 import { useToast } from '@/components/ui/Toast';
+import { TeamManager } from '@/components/TeamManager';
+import { DashboardHeader } from '@/components/DashboardHeader';
+
+type SettingsTab = 'profile' | 'security' | 'integrations' | 'teams' | 'notifications' | 'danger';
+
+const TABS: { id: SettingsTab; label: string; icon: any }[] = [
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'security', label: 'Security', icon: Lock },
+    { id: 'integrations', label: 'Integrations', icon: Link2 },
+    { id: 'teams', label: 'Teams', icon: Users },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
+];
 
 export default function SettingsPage() {
     const router = useRouter();
     const { user, signOut } = useAuth();
     const { showToast } = useToast();
+
+    // Active tab state - check URL hash for direct navigation
+    const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+
+    useEffect(() => {
+        const hash = window.location.hash.replace('#', '') as SettingsTab;
+        if (TABS.some(t => t.id === hash)) {
+            setActiveTab(hash);
+        }
+    }, []);
+
+    // Profile state
     const [userRole, setUserRole] = useState('');
+
+    // Security state
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
 
     // Slack integration state
     const [slackStatus, setSlackStatus] = useState<'loading' | 'unlinked' | 'pending' | 'linked'>('loading');
@@ -40,7 +63,14 @@ export default function SettingsPage() {
     const [copiedGithubCode, setCopiedGithubCode] = useState(false);
     const [generatingGithubCode, setGeneratingGithubCode] = useState(false);
 
-    // Fetch Slack link status on mount
+    // Email digest preferences
+    const [digestEnabled, setDigestEnabled] = useState(true);
+    const [digestTime, setDigestTime] = useState<'friday_9am' | 'monday_9am' | 'disabled'>('friday_9am');
+
+    // Delete confirmation
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    // Fetch integrations on mount
     useEffect(() => {
         fetchSlackStatus();
         fetchGithubStatus();
@@ -57,7 +87,6 @@ export default function SettingsPage() {
                 if (data.linked_at) setSlackLinkedAt(data.linked_at);
             }
         } catch (err) {
-            console.error('Failed to fetch Slack status:', err);
             setSlackStatus('unlinked');
         }
     };
@@ -102,7 +131,6 @@ export default function SettingsPage() {
         setTimeout(() => setCopiedCode(false), 2000);
     };
 
-    // GitHub integration functions
     const fetchGithubStatus = async () => {
         try {
             const response = await fetch('/api/github/link');
@@ -123,7 +151,6 @@ export default function SettingsPage() {
                 setGithubStatus('unlinked');
             }
         } catch (err) {
-            console.error('Failed to fetch GitHub status:', err);
             setGithubStatus('unlinked');
         }
     };
@@ -173,11 +200,8 @@ export default function SettingsPage() {
         try {
             const session = await fetch('/api/auth/session').then(r => r.json());
             const response = await fetch('/api/export', {
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                },
+                headers: { 'Authorization': `Bearer ${session.access_token}` },
             });
-
             if (response.ok) {
                 const blob = await response.blob();
                 const url = URL.createObjectURL(blob);
@@ -191,7 +215,6 @@ export default function SettingsPage() {
                 showToast('Data exported successfully!', 'success');
             }
         } catch (err) {
-            console.error('Export error:', err);
             showToast('Failed to export data', 'error');
         }
     };
@@ -201,24 +224,16 @@ export default function SettingsPage() {
             setError('Password must be at least 6 characters');
             return;
         }
-
         if (newPassword !== confirmPassword) {
             setError('Passwords do not match');
             return;
         }
-
         setSaving(true);
         setError('');
-        setSuccess('');
-
         try {
             const { supabase } = await import('@/lib/supabase/client');
-            const { error } = await supabase.auth.updateUser({
-                password: newPassword,
-            });
-
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
             if (error) throw error;
-
             showToast('Password updated successfully!', 'success');
             setNewPassword('');
             setConfirmPassword('');
@@ -234,9 +249,13 @@ export default function SettingsPage() {
             await signOut();
             router.push('/');
         } catch (err) {
-            console.error('Delete error:', err);
             showToast('Failed to delete account', 'error');
         }
+    };
+
+    const handleTabChange = (tabId: SettingsTab) => {
+        setActiveTab(tabId);
+        window.history.replaceState(null, '', `#${tabId}`);
     };
 
     return (
@@ -245,319 +264,288 @@ export default function SettingsPage() {
             <div className="fixed top-0 left-0 w-full h-[500px] bg-indigo-900/20 blur-[120px] pointer-events-none" />
             <div className="fixed bottom-0 right-0 w-full h-[500px] bg-violet-900/10 blur-[100px] pointer-events-none" />
 
-            <header className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold text-white font-outfit">Settings</h1>
-                            <p className="text-sm text-slate-400">Manage your account and preferences</p>
-                        </div>
-                        <Link href="/dashboard">
-                            <Button variant="outline" className="border-white/10 text-slate-300 hover:bg-white/5 hover:text-white">
-                                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
-                            </Button>
-                        </Link>
+            <DashboardHeader showBack pageTitle="Settings" pageSubtitle="Manage your account and preferences" />
+
+            <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+                <div className="flex flex-col lg:flex-row gap-8">
+                    {/* Sidebar Navigation */}
+                    <aside className="lg:w-56 flex-shrink-0">
+                        <nav className="space-y-1 sticky top-24">
+                            {TABS.map((tab) => {
+                                const Icon = tab.icon;
+                                const isActive = activeTab === tab.id;
+                                const isDanger = tab.id === 'danger';
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => handleTabChange(tab.id)}
+                                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive
+                                            ? isDanger
+                                                ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                                : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                                            : isDanger
+                                                ? 'text-red-400/60 hover:text-red-400 hover:bg-red-500/5'
+                                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                            }`}
+                                    >
+                                        <Icon className="w-4 h-4" />
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                    </aside>
+
+                    {/* Content Area */}
+                    <div className="flex-1 min-w-0">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeTab}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {/* Profile Tab */}
+                                {activeTab === 'profile' && (
+                                    <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
+                                        <h2 className="text-xl font-semibold text-white mb-6 font-outfit">Profile Settings</h2>
+                                        <div className="space-y-6 max-w-md">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                                                <Input
+                                                    value={user?.email || ''}
+                                                    disabled
+                                                    className="bg-slate-800/50 border-white/5 text-slate-400"
+                                                />
+                                                <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">Current Role</label>
+                                                <Input
+                                                    value={userRole}
+                                                    onChange={(e) => setUserRole(e.target.value)}
+                                                    placeholder="e.g., Senior Software Engineer"
+                                                    className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
+                                                />
+                                                <p className="text-xs text-slate-500 mt-1">Used for AI coaching context</p>
+                                            </div>
+                                            <div className="pt-4 border-t border-white/5">
+                                                <h3 className="text-sm font-medium text-slate-300 mb-3">Export Your Data</h3>
+                                                <Button onClick={handleExport} variant="secondary" className="bg-slate-800 border-white/10">
+                                                    <Download className="w-4 h-4 mr-2" /> Export All Data (JSON)
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Security Tab */}
+                                {activeTab === 'security' && (
+                                    <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
+                                        <h2 className="text-xl font-semibold text-white mb-6 font-outfit">Security</h2>
+                                        <div className="space-y-4 max-w-md">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">New Password</label>
+                                                <Input
+                                                    type="password"
+                                                    value={newPassword}
+                                                    onChange={(e) => setNewPassword(e.target.value)}
+                                                    placeholder="Enter new password"
+                                                    className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">Confirm Password</label>
+                                                <Input
+                                                    type="password"
+                                                    value={confirmPassword}
+                                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                                    placeholder="Confirm new password"
+                                                    className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
+                                                />
+                                            </div>
+                                            {error && (
+                                                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
+                                                    {error}
+                                                </div>
+                                            )}
+                                            <Button onClick={handlePasswordChange} disabled={saving} variant="primary">
+                                                {saving ? 'Updating...' : 'Update Password'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Integrations Tab */}
+                                {activeTab === 'integrations' && (
+                                    <div className="space-y-6">
+                                        {/* Slack */}
+                                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-10 h-10 bg-[#4A154B] rounded-lg flex items-center justify-center">
+                                                    <MessageSquare className="w-5 h-5 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-semibold text-white font-outfit">Slack</h3>
+                                                    <p className="text-sm text-slate-400">Log decisions with /logdecision</p>
+                                                </div>
+                                            </div>
+                                            {slackStatus === 'loading' && <div className="text-slate-400">Loading...</div>}
+                                            {slackStatus === 'linked' && (
+                                                <div className="space-y-3">
+                                                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
+                                                        <Check className="w-4 h-4 text-green-400" />
+                                                        <span className="text-green-400 text-sm">Connected</span>
+                                                    </div>
+                                                    <Button onClick={unlinkSlack} variant="outline" size="sm" className="text-red-400 border-red-500/20 hover:bg-red-500/10">
+                                                        <Unlink className="w-4 h-4 mr-2" /> Unlink
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            {slackStatus === 'pending' && (
+                                                <div className="space-y-3">
+                                                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                                                        <p className="text-amber-400 text-sm mb-2">Enter this code in Slack:</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <code className="bg-slate-800 px-4 py-2 rounded-lg text-xl font-mono text-white">{slackLinkCode}</code>
+                                                            <Button onClick={copyLinkCode} variant="ghost" size="sm">
+                                                                {copiedCode ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {slackStatus === 'unlinked' && (
+                                                <Button onClick={generateSlackCode} disabled={generatingCode}>
+                                                    <MessageSquare className="w-4 h-4 mr-2" />
+                                                    {generatingCode ? 'Generating...' : 'Connect Slack'}
+                                                </Button>
+                                            )}
+                                        </div>
+
+                                        {/* GitHub */}
+                                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
+                                                    <Github className="w-5 h-5 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-semibold text-white font-outfit">GitHub</h3>
+                                                    <p className="text-sm text-slate-400">Capture decisions from PR comments</p>
+                                                </div>
+                                            </div>
+                                            {githubStatus === 'loading' && <div className="text-slate-400">Loading...</div>}
+                                            {githubStatus === 'linked' && (
+                                                <div className="space-y-3">
+                                                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
+                                                        <Check className="w-4 h-4 text-green-400" />
+                                                        <span className="text-green-400 text-sm">Connected as @{githubUsername}</span>
+                                                    </div>
+                                                    <Button onClick={unlinkGithub} variant="outline" size="sm" className="text-red-400 border-red-500/20 hover:bg-red-500/10">
+                                                        <Unlink className="w-4 h-4 mr-2" /> Unlink
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            {githubStatus === 'pending' && (
+                                                <div className="space-y-3">
+                                                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                                                        <p className="text-amber-400 text-sm mb-2">Your link code:</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <code className="bg-slate-800 px-4 py-2 rounded-lg text-xl font-mono text-white">{githubLinkCode}</code>
+                                                            <Button onClick={copyGithubLinkCode} variant="ghost" size="sm">
+                                                                {copiedGithubCode ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {githubStatus === 'unlinked' && (
+                                                <Button onClick={generateGithubCode} disabled={generatingGithubCode}>
+                                                    <Github className="w-4 h-4 mr-2" />
+                                                    {generatingGithubCode ? 'Generating...' : 'Connect GitHub'}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Teams Tab */}
+                                {activeTab === 'teams' && (
+                                    <TeamManager />
+                                )}
+
+                                {/* Notifications Tab */}
+                                {activeTab === 'notifications' && (
+                                    <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center">
+                                                <Mail className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-semibold text-white font-outfit">Email Notifications</h2>
+                                                <p className="text-sm text-slate-400">Weekly digest of your decisions</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4 max-w-md">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-white font-medium">Weekly Digest</p>
+                                                    <p className="text-sm text-slate-400">Receive a summary each week</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setDigestEnabled(!digestEnabled)}
+                                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${digestEnabled ? 'bg-violet-600' : 'bg-slate-600'}`}
+                                                >
+                                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${digestEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                </button>
+                                            </div>
+                                            {digestEnabled && (
+                                                <div className="space-y-2">
+                                                    <label className="block text-sm text-slate-300">Delivery Time</label>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => setDigestTime('friday_9am')}
+                                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${digestTime === 'friday_9am' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                                                        >
+                                                            Friday 9am
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setDigestTime('monday_9am')}
+                                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${digestTime === 'monday_9am' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                                                        >
+                                                            Monday 9am
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Danger Zone Tab */}
+                                {activeTab === 'danger' && (
+                                    <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-6">
+                                        <h2 className="text-xl font-semibold text-red-400 mb-4 font-outfit flex items-center gap-2">
+                                            <AlertTriangle className="w-5 h-5" /> Danger Zone
+                                        </h2>
+                                        <p className="text-red-300/70 mb-6">
+                                            Once you delete your account, there is no going back. Please be certain.
+                                        </p>
+                                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4">
+                                            <p className="text-sm text-amber-400 flex items-center gap-2">
+                                                <Lightbulb className="w-4 h-4" />
+                                                <span><strong>Tip:</strong> Export your data first before deleting.</span>
+                                            </p>
+                                        </div>
+                                        <Button onClick={() => setShowDeleteConfirm(true)} variant="danger">
+                                            <Trash2 className="w-4 h-4 mr-2" /> Delete Account
+                                        </Button>
+                                    </div>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
-                </div>
-            </header>
-
-            <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-                <div className="space-y-6">
-                    {/* Profile Section */}
-                    <FadeIn>
-                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
-                            <h2 className="text-xl font-semibold text-white mb-4 font-outfit">Profile</h2>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                                        Email
-                                    </label>
-                                    <Input
-                                        value={user?.email || ''}
-                                        disabled
-                                        className="bg-slate-800/50 border-white/5 text-slate-400"
-                                    />
-                                    <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                                        Current Role (Optional)
-                                    </label>
-                                    <Input
-                                        value={userRole}
-                                        onChange={(e) => setUserRole(e.target.value)}
-                                        placeholder="e.g., Senior Software Engineer"
-                                        className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </FadeIn>
-
-                    {/* Password Section */}
-                    <FadeIn delay={0.1}>
-                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
-                            <h2 className="text-xl font-semibold text-white mb-4 font-outfit">Change Password</h2>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                                        New Password
-                                    </label>
-                                    <Input
-                                        type="password"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        placeholder="Enter new password"
-                                        className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                                        Confirm New Password
-                                    </label>
-                                    <Input
-                                        type="password"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder="Confirm new password"
-                                        className="bg-black/20 border-white/10 text-white placeholder:text-slate-600"
-                                    />
-                                </div>
-
-                                {error && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm"
-                                    >
-                                        {error}
-                                    </motion.div>
-                                )}
-
-                                {success && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg text-sm"
-                                    >
-                                        {success}
-                                    </motion.div>
-                                )}
-
-                                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                                    <Button
-                                        onClick={handlePasswordChange}
-                                        disabled={saving}
-                                        variant="primary"
-                                    >
-                                        {saving ? 'Updating...' : 'Update Password'}
-                                    </Button>
-                                </motion.div>
-                            </div>
-                        </div>
-                    </FadeIn>
-
-                    {/* Export Data Section */}
-                    <FadeIn delay={0.2}>
-                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
-                            <h2 className="text-xl font-semibold text-white mb-4 font-outfit">Export Data</h2>
-                            <p className="text-slate-400 mb-4">
-                                Download all your decisions and data as a JSON file.
-                            </p>
-                            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                                <Button onClick={handleExport} variant="secondary">
-                                    <Download className="w-4 h-4 mr-2" /> Export All Data
-                                </Button>
-                            </motion.div>
-                        </div>
-                    </FadeIn>
-
-                    {/* Slack Integration Section */}
-                    <FadeIn delay={0.25}>
-                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 bg-[#4A154B] rounded-lg flex items-center justify-center">
-                                    <MessageSquare className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-semibold text-white font-outfit">Slack Integration</h2>
-                                    <p className="text-sm text-slate-400">Log decisions directly from Slack</p>
-                                </div>
-                            </div>
-
-                            {slackStatus === 'loading' && (
-                                <div className="text-slate-400">Loading...</div>
-                            )}
-
-                            {slackStatus === 'linked' && (
-                                <div className="space-y-4">
-                                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                                        <div className="flex items-center gap-2 text-green-400">
-                                            <Check className="w-5 h-5" />
-                                            <span className="font-medium">Connected to Slack</span>
-                                        </div>
-                                        <p className="text-sm text-green-300/70 mt-1">
-                                            Linked {slackLinkedAt ? new Date(slackLinkedAt).toLocaleDateString() : 'recently'}
-                                        </p>
-                                    </div>
-                                    <p className="text-slate-400 text-sm">
-                                        Use <code className="bg-slate-800 px-2 py-0.5 rounded text-violet-400">/logdecision</code> in Slack to log decisions.
-                                    </p>
-                                    <Button onClick={unlinkSlack} variant="outline" className="border-red-500/20 text-red-400 hover:bg-red-500/10">
-                                        <Unlink className="w-4 h-4 mr-2" /> Unlink Slack
-                                    </Button>
-                                </div>
-                            )}
-
-                            {slackStatus === 'pending' && (
-                                <div className="space-y-4">
-                                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
-                                        <p className="text-amber-400 font-medium mb-2">Enter this code in Slack:</p>
-                                        <div className="flex items-center gap-2">
-                                            <code className="bg-slate-800 px-4 py-2 rounded-lg text-2xl font-mono text-white tracking-widest">
-                                                {slackLinkCode}
-                                            </code>
-                                            <Button onClick={copyLinkCode} variant="ghost" size="sm">
-                                                {copiedCode ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                                            </Button>
-                                        </div>
-                                        <p className="text-sm text-amber-300/70 mt-2">
-                                            Expires in {slackExpiresAt ? Math.max(0, Math.round((new Date(slackExpiresAt).getTime() - Date.now()) / 60000)) : 15} minutes
-                                        </p>
-                                    </div>
-                                    <div className="bg-slate-800/50 rounded-lg p-4">
-                                        <p className="text-slate-300 text-sm">In Slack, type:</p>
-                                        <code className="text-violet-400 text-sm">/logdecision link {slackLinkCode}</code>
-                                    </div>
-                                    <Button onClick={generateSlackCode} variant="outline" disabled={generatingCode}>
-                                        <RefreshCw className={`w-4 h-4 mr-2 ${generatingCode ? 'animate-spin' : ''}`} />
-                                        Generate New Code
-                                    </Button>
-                                </div>
-                            )}
-
-                            {slackStatus === 'unlinked' && (
-                                <div className="space-y-4">
-                                    <p className="text-slate-400">
-                                        Connect your Slack account to log decisions with <code className="bg-slate-800 px-2 py-0.5 rounded text-violet-400">/logdecision</code>.
-                                    </p>
-                                    <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                                        <Button onClick={generateSlackCode} variant="primary" disabled={generatingCode}>
-                                            <MessageSquare className="w-4 h-4 mr-2" />
-                                            {generatingCode ? 'Generating...' : 'Connect Slack'}
-                                        </Button>
-                                    </motion.div>
-                                </div>
-                            )}
-                        </div>
-                    </FadeIn>
-
-                    {/* GitHub Integration Section */}
-                    <FadeIn delay={0.27}>
-                        <div className="bg-slate-900/50 backdrop-blur-sm border border-white/5 rounded-xl shadow-lg p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
-                                    <Github className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-semibold text-white font-outfit">GitHub Integration</h2>
-                                    <p className="text-sm text-slate-400">Capture decisions from PR comments</p>
-                                </div>
-                            </div>
-
-                            {githubStatus === 'loading' && (
-                                <div className="text-slate-400">Loading...</div>
-                            )}
-
-                            {githubStatus === 'linked' && (
-                                <div className="space-y-4">
-                                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                                        <div className="flex items-center gap-2 text-green-400">
-                                            <Check className="w-5 h-5" />
-                                            <span className="font-medium">Connected to GitHub</span>
-                                        </div>
-                                        <p className="text-sm text-green-300/70 mt-1">
-                                            @{githubUsername} • Linked {githubLinkedAt ? new Date(githubLinkedAt).toLocaleDateString() : 'recently'}
-                                        </p>
-                                    </div>
-                                    <p className="text-slate-400 text-sm">
-                                        Comment <code className="bg-slate-800 px-2 py-0.5 rounded text-violet-400">@blackbox</code> on any PR to capture a decision.
-                                    </p>
-                                    <div className="bg-slate-800/50 rounded-lg p-4">
-                                        <p className="text-slate-300 text-sm mb-2">Example PR comment:</p>
-                                        <code className="text-violet-400 text-xs">@blackbox Decided to use Redis for caching because...</code>
-                                    </div>
-                                    <Button onClick={unlinkGithub} variant="outline" className="border-red-500/20 text-red-400 hover:bg-red-500/10">
-                                        <Unlink className="w-4 h-4 mr-2" /> Unlink GitHub
-                                    </Button>
-                                </div>
-                            )}
-
-                            {githubStatus === 'pending' && (
-                                <div className="space-y-4">
-                                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
-                                        <p className="text-amber-400 font-medium mb-2">Your link code:</p>
-                                        <div className="flex items-center gap-2">
-                                            <code className="bg-slate-800 px-4 py-2 rounded-lg text-2xl font-mono text-white tracking-widest">
-                                                {githubLinkCode}
-                                            </code>
-                                            <Button onClick={copyGithubLinkCode} variant="ghost" size="sm">
-                                                {copiedGithubCode ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                                            </Button>
-                                        </div>
-                                        <p className="text-sm text-amber-300/70 mt-2">
-                                            Expires in {githubExpiresAt ? Math.max(0, Math.round((new Date(githubExpiresAt).getTime() - Date.now()) / 60000)) : 15} minutes
-                                        </p>
-                                    </div>
-                                    <div className="bg-slate-800/50 rounded-lg p-4">
-                                        <p className="text-slate-300 text-sm mb-2">To complete linking, use our Chrome extension on GitHub or call:</p>
-                                        <code className="text-violet-400 text-xs block">POST /api/github/verify</code>
-                                        <code className="text-slate-500 text-xs block mt-1">{'{ linkCode, githubUserId, githubUsername }'}</code>
-                                    </div>
-                                    <Button onClick={generateGithubCode} variant="outline" disabled={generatingGithubCode}>
-                                        <RefreshCw className={`w-4 h-4 mr-2 ${generatingGithubCode ? 'animate-spin' : ''}`} />
-                                        Generate New Code
-                                    </Button>
-                                </div>
-                            )}
-
-                            {githubStatus === 'unlinked' && (
-                                <div className="space-y-4">
-                                    <p className="text-slate-400">
-                                        Connect your GitHub account to capture decisions when you comment <code className="bg-slate-800 px-2 py-0.5 rounded text-violet-400">@blackbox</code> on PRs and issues.
-                                    </p>
-                                    <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                                        <Button onClick={generateGithubCode} variant="primary" disabled={generatingGithubCode}>
-                                            <Github className="w-4 h-4 mr-2" />
-                                            {generatingGithubCode ? 'Generating...' : 'Connect GitHub'}
-                                        </Button>
-                                    </motion.div>
-                                </div>
-                            )}
-                        </div>
-                    </FadeIn>
-
-                    {/* Danger Zone */}
-                    <FadeIn delay={0.3}>
-                        <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-6">
-                            <h2 className="text-xl font-semibold text-red-400 mb-4 font-outfit flex items-center gap-2">
-                                <AlertTriangle className="w-5 h-5" /> Danger Zone
-                            </h2>
-                            <p className="text-red-300/70 mb-4">
-                                Once you delete your account, there is no going back. Please be certain.
-                            </p>
-                            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                                <Button
-                                    onClick={() => setShowDeleteConfirm(true)}
-                                    variant="danger"
-                                >
-                                    <Trash2 className="w-4 h-4 mr-2" /> Delete Account
-                                </Button>
-                            </motion.div>
-                        </div>
-                    </FadeIn>
                 </div>
             </main>
 
@@ -571,41 +559,21 @@ export default function SettingsPage() {
                     <motion.div
                         initial={{ scale: 0.95 }}
                         animate={{ scale: 1 }}
-                        className="bg-slate-900 border border-white/10 rounded-xl p-6 max-w-md mx-4 shadow-2xl"
+                        className="bg-slate-900 border border-white/10 rounded-xl p-6 max-w-md shadow-2xl"
                     >
                         <h3 className="text-xl font-bold text-white mb-2 font-outfit flex items-center gap-2">
                             <AlertTriangle className="w-5 h-5 text-amber-400" /> Delete Account?
                         </h3>
                         <p className="text-slate-400 mb-4">
-                            This action cannot be undone. All your decisions and data will be permanently deleted.
+                            This action cannot be undone. All your data will be permanently deleted.
                         </p>
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4">
-                            <p className="text-sm text-amber-400 flex items-center gap-2">
-                                <Lightbulb className="w-4 h-4 flex-shrink-0" />
-                                <span><strong>Tip:</strong> Export your data first before deleting your account.</span>
-                            </p>
-                        </div>
                         <div className="flex gap-4">
-                            <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                <Button
-                                    onClick={handleDeleteAccount}
-                                    variant="danger"
-                                    size="lg"
-                                    className="w-full"
-                                >
-                                    Yes, Delete Forever
-                                </Button>
-                            </motion.div>
-                            <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                <Button
-                                    onClick={() => setShowDeleteConfirm(false)}
-                                    variant="outline"
-                                    size="lg"
-                                    className="w-full border-white/10 text-slate-300 hover:bg-white/5"
-                                >
-                                    Cancel
-                                </Button>
-                            </motion.div>
+                            <Button onClick={handleDeleteAccount} variant="danger" className="flex-1">
+                                Yes, Delete Forever
+                            </Button>
+                            <Button onClick={() => setShowDeleteConfirm(false)} variant="outline" className="flex-1 border-white/10 text-slate-300">
+                                Cancel
+                            </Button>
                         </div>
                     </motion.div>
                 </motion.div>

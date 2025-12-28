@@ -56,6 +56,35 @@ export async function POST() {
         // Generate promotion package using AI
         const promotionPackage = await generatePromotionPackage(decisions);
 
+        // Save the promotion package to database
+        const { error: insertError } = await supabase
+            .from('promotion_packages')
+            .insert({
+                user_id: user.id,
+                content: promotionPackage,
+                decisions_count: decisions.length,
+            });
+
+        if (insertError) {
+            console.error('Error saving promotion package:', insertError);
+            // Continue even if save fails - user still gets their package
+        }
+
+        // Enforce limit of 10 packages per user - delete oldest if over limit
+        const { data: allPackages } = await supabase
+            .from('promotion_packages')
+            .select('id, created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (allPackages && allPackages.length > 10) {
+            const packagesToDelete = allPackages.slice(10).map(p => p.id);
+            await supabase
+                .from('promotion_packages')
+                .delete()
+                .in('id', packagesToDelete);
+        }
+
         // Track AI generation
         await supabase.from('ai_generations').insert({
             user_id: user.id,

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Lock, Sparkles } from 'lucide-react';
 import { Decision } from '@/lib/supabase/client';
+import { VisibilityBadge } from '@/components/TeamVisibilityToggle';
 
 interface DecisionCardProps {
     decision: Decision;
@@ -15,6 +16,9 @@ export function DecisionCard({ decision }: DecisionCardProps) {
         day: 'numeric',
         year: 'numeric',
     });
+
+    // Check if decision is team-visible
+    const isTeamVisible = !!(decision as { team_id?: string }).team_id;
 
     return (
         <Link href={`/dashboard/decisions/${decision.id}`}>
@@ -28,6 +32,8 @@ export function DecisionCard({ decision }: DecisionCardProps) {
                         {decision.title}
                     </h3>
                     <div className="flex items-center gap-2">
+                        {/* Team visibility badge */}
+                        <VisibilityBadge isTeamVisible={isTeamVisible} />
                         {decision.is_locked && (
                             <span className="flex-shrink-0 text-slate-500" title="Locked">
                                 <Lock className="w-4 h-4" />

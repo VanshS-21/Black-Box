@@ -1,0 +1,9 @@
+# Security Policy for Career Black Box
+# https://securitytxt.org/
+
+Contact: mailto:security@careerblackbox.com
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://black-box-flax.vercel.app/.well-known/security.txt
+
+# Thank you for helping keep Career Black Box and our users safe!

@@ -47,6 +47,11 @@ export const createDecisionSchema = z.object({
         .max(2000, 'URL must be 2000 characters or less')
         .nullable()
         .optional(),
+    // Team visibility - optional team ID to share decision with
+    team_id: z.string()
+        .uuid('Invalid team ID')
+        .nullable()
+        .optional(),
 });
 
 // AI structure input validation

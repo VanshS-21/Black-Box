@@ -2,24 +2,41 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Package, RefreshCw, Plus, Settings, LogOut } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { RefreshCw, Filter, ChevronDown, X, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 import { Decision } from '@/lib/supabase/client';
 import { DecisionCard } from '@/components/DecisionCard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PromotionPackageGenerator } from '@/components/PromotionPackageGenerator';
+import { WeeklyUpdateGenerator } from '@/components/WeeklyUpdateGenerator';
+import { QuickReframe } from '@/components/QuickReframe';
+import { DemoDecisions } from '@/components/DemoDecisions';
+import { SavedPackagesCard } from '@/components/SavedPackagesCard';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StaggerContainer, StaggerItem, FadeIn } from '@/components/ui/FadeIn';
+import { DashboardAnalytics } from '@/components/DashboardAnalytics';
+import { DashboardHeader } from '@/components/DashboardHeader';
+
+const INITIAL_VISIBLE_COUNT = 6;
+const LOAD_MORE_COUNT = 6;
 
 export default function DashboardPage() {
-    const { user, signOut } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
     const [decisions, setDecisions] = useState<Decision[]>([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
+
+    // Pagination state
+    const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+
+    // Filter state
+    const [showFilters, setShowFilters] = useState(false);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+    const [minConfidence, setMinConfidence] = useState(0);
 
     const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +50,14 @@ export default function DashboardPage() {
     const fetchDecisions = async () => {
         setError(null);
         try {
-            const response = await fetch(`/api/decisions?search=${encodeURIComponent(search)}`);
+            // Build query params
+            const params = new URLSearchParams();
+            if (search) params.set('search', search);
+            if (dateFrom) params.set('date_from', dateFrom);
+            if (dateTo) params.set('date_to', dateTo);
+            if (minConfidence > 0) params.set('min_confidence', String(minConfidence));
+
+            const response = await fetch(`/api/decisions?${params.toString()}`);
 
             if (response.ok) {
                 const data = await response.json();
@@ -50,13 +74,16 @@ export default function DashboardPage() {
         }
     };
 
-    const handleSearch = () => {
-        fetchDecisions();
+    // Clear all filters
+    const clearFilters = () => {
+        setSearch('');
+        setDateFrom('');
+        setDateTo('');
+        setMinConfidence(0);
     };
 
-    const handleSignOut = async () => {
-        await signOut();
-        router.push('/auth/login');
+    const handleSearch = () => {
+        fetchDecisions();
     };
 
     if (loading) {
@@ -66,15 +93,7 @@ export default function DashboardPage() {
                 <div className="fixed top-0 left-0 w-full h-[500px] bg-indigo-900/20 blur-[120px] pointer-events-none" />
                 <div className="fixed bottom-0 right-0 w-full h-[500px] bg-violet-900/10 blur-[100px] pointer-events-none" />
 
-                {/* Header Skeleton */}
-                <header className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-md shadow-lg shadow-indigo-500/20" />
-                            <h1 className="text-lg font-bold text-white tracking-tight font-outfit">Career Black Box</h1>
-                        </div>
-                    </div>
-                </header>
+                <DashboardHeader />
 
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
                     <div className="mb-12">
@@ -125,30 +144,7 @@ export default function DashboardPage() {
             <div className="fixed top-0 left-0 w-full h-[500px] bg-indigo-900/20 blur-[120px] pointer-events-none" />
             <div className="fixed bottom-0 right-0 w-full h-[500px] bg-violet-900/10 blur-[100px] pointer-events-none" />
 
-            {/* Header */}
-            <header className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-md shadow-lg shadow-indigo-500/20" />
-                        <h1 className="text-lg font-bold text-white tracking-tight font-outfit">Career Black Box</h1>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <span className="text-xs font-mono text-slate-500 hidden sm:block">USR: {user?.email}</span>
-                        <div className="h-4 w-[1px] bg-white/10 hidden sm:block" />
-                        <Link href="/dashboard/settings">
-                            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white hover:bg-white/5">
-                                <Settings className="w-4 h-4 sm:mr-2" />
-                                <span className="hidden sm:inline">Settings</span>
-                            </Button>
-                        </Link>
-                        <Button variant="outline" size="sm" onClick={handleSignOut} className="border-white/10 text-slate-300 hover:bg-white/5 hover:text-white">
-                            <LogOut className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Sign Out</span>
-                        </Button>
-                    </div>
-                </div>
-            </header>
+            <DashboardHeader />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
                 {/* Stats / Welcome Area */}
@@ -161,7 +157,7 @@ export default function DashboardPage() {
 
                 {/* Search and Actions */}
                 <FadeIn delay={0.1}>
-                    <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center justify-between bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm">
+                    <div className="mb-4 flex flex-col sm:flex-row gap-4 items-center justify-between bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm">
                         <div className="flex-1 flex gap-2 w-full sm:max-w-md">
                             <Input
                                 value={search}
@@ -173,59 +169,171 @@ export default function DashboardPage() {
                             <Button onClick={handleSearch} variant="secondary" className="bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-white/5">
                                 Search
                             </Button>
-                        </div>
-                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                             <Button
-                                onClick={() => router.push('/dashboard/new')}
-                                className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/20 border border-white/10"
-                                size="lg"
+                                onClick={() => setShowFilters(!showFilters)}
+                                variant="ghost"
+                                className={`text-slate-400 hover:text-white ${showFilters ? 'bg-white/10' : ''}`}
                             >
-                                <Plus className="w-4 h-4 mr-2" /> Log Decision
+                                <Filter className="w-4 h-4" />
+                                <ChevronDown className={`w-3 h-3 ml-1 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
                             </Button>
+                        </div>
+                    </div>
+
+                    {/* Expandable Filters */}
+                    {showFilters && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mb-8 bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm"
+                        >
+                            <div className="flex flex-wrap gap-4 items-end">
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1">From Date</label>
+                                    <input
+                                        type="date"
+                                        value={dateFrom}
+                                        onChange={(e) => setDateFrom(e.target.value)}
+                                        className="px-3 py-2 rounded-lg bg-slate-900 border border-white/10 text-white text-sm focus:border-indigo-500/50 focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1">To Date</label>
+                                    <input
+                                        type="date"
+                                        value={dateTo}
+                                        onChange={(e) => setDateTo(e.target.value)}
+                                        className="px-3 py-2 rounded-lg bg-slate-900 border border-white/10 text-white text-sm focus:border-indigo-500/50 focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1">Min Confidence</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="10"
+                                            value={minConfidence}
+                                            onChange={(e) => setMinConfidence(parseInt(e.target.value))}
+                                            className="w-24 accent-indigo-500"
+                                        />
+                                        <span className="text-sm text-white w-8">{minConfidence > 0 ? `${minConfidence}+` : 'Any'}</span>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button onClick={handleSearch} size="sm" className="bg-indigo-600 text-white hover:bg-indigo-500">
+                                        Apply
+                                    </Button>
+                                    {(dateFrom || dateTo || minConfidence > 0) && (
+                                        <Button onClick={() => { clearFilters(); fetchDecisions(); }} size="sm" variant="ghost" className="text-slate-400 hover:text-white">
+                                            <X className="w-4 h-4 mr-1" /> Clear
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
                         </motion.div>
+                    )}
+                </FadeIn>
+
+                {/* Analytics Widget */}
+                <FadeIn delay={0.15}>
+                    <div className="mb-8">
+                        <DashboardAnalytics />
                     </div>
                 </FadeIn>
 
-                {/* Promotion Package Generator */}
+                {/* AI Tools Grid - Quick Reframe, Weekly Update, Promotion Package */}
                 <FadeIn delay={0.2}>
-                    <div className="mb-12">
-                        <PromotionPackageGenerator decisionCount={decisions.length} />
+                    <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left: Quick Reframe */}
+                        <QuickReframe />
+
+                        {/* Right: Weekly Update + Promotion Package stacked */}
+                        <div className="space-y-6">
+                            <WeeklyUpdateGenerator decisionCount={decisions.length} />
+                            <PromotionPackageGenerator decisionCount={decisions.length} />
+                        </div>
                     </div>
                 </FadeIn>
 
-                {/* Decision List or Empty State */}
+                {/* Saved Packages */}
+                <FadeIn delay={0.25}>
+                    <div className="mb-12">
+                        <SavedPackagesCard />
+                    </div>
+                </FadeIn>
+
+                {/* Decision List or Demo Data for new users */}
                 {decisions.length === 0 ? (
                     <FadeIn delay={0.3}>
-                        <div className="text-center py-24 rounded-3xl border-2 border-dashed border-white/5 bg-white/[0.02]">
-                            <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner border border-white/5">
-                                <Package className="w-8 h-8 text-slate-500" />
-                            </div>
-                            <h2 className="text-xl font-bold text-white mb-2 font-outfit">
-                                No flight data recorded
-                            </h2>
-                            <p className="text-slate-500 mb-8 max-w-sm mx-auto">
-                                Start documenting your professional decisions to build your evidence locker.
-                            </p>
-                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                <Button
-                                    onClick={() => router.push('/dashboard/new')}
-                                    variant="primary"
-                                    size="lg"
-                                    className="bg-white text-slate-900 hover:bg-slate-100"
-                                >
-                                    Log First Decision
-                                </Button>
-                            </motion.div>
-                        </div>
+                        <DemoDecisions />
                     </FadeIn>
                 ) : (
-                    <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {decisions.map((decision) => (
-                            <StaggerItem key={decision.id}>
-                                <DecisionCard decision={decision} />
-                            </StaggerItem>
-                        ))}
-                    </StaggerContainer>
+                    <div>
+                        {/* Section Header with count */}
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-semibold text-white font-outfit">
+                                Your Decisions
+                                <span className="text-sm font-normal text-slate-400 ml-2">
+                                    ({decisions.length} total)
+                                </span>
+                            </h3>
+                            {decisions.length > INITIAL_VISIBLE_COUNT && (
+                                <span className="text-sm text-slate-400">
+                                    Showing {Math.min(visibleCount, decisions.length)} of {decisions.length}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Decision Cards Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {decisions.slice(0, visibleCount).map((decision, index) => (
+                                <motion.div
+                                    key={decision.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{
+                                        duration: 0.4,
+                                        delay: index >= INITIAL_VISIBLE_COUNT ? (index - INITIAL_VISIBLE_COUNT) * 0.05 : index * 0.05,
+                                        ease: "easeOut"
+                                    }}
+                                >
+                                    <DecisionCard decision={decision} />
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        {/* Show More / Show Less Controls */}
+                        {decisions.length > INITIAL_VISIBLE_COUNT && (
+                            <motion.div
+                                className="mt-8 flex justify-center gap-3"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                {visibleCount < decisions.length && (
+                                    <Button
+                                        onClick={() => setVisibleCount(prev => Math.min(prev + LOAD_MORE_COUNT, decisions.length))}
+                                        variant="outline"
+                                        className="border-white/10 text-slate-300 hover:bg-white/5 hover:text-white"
+                                    >
+                                        <ChevronDown className="w-4 h-4 mr-2" />
+                                        Show More ({Math.min(LOAD_MORE_COUNT, decisions.length - visibleCount)} more)
+                                    </Button>
+                                )}
+                                {visibleCount > INITIAL_VISIBLE_COUNT && (
+                                    <Button
+                                        onClick={() => setVisibleCount(INITIAL_VISIBLE_COUNT)}
+                                        variant="ghost"
+                                        className="text-slate-400 hover:text-white"
+                                    >
+                                        <ChevronUp className="w-4 h-4 mr-2" />
+                                        Show Less
+                                    </Button>
+                                )}
+                            </motion.div>
+                        )}
+                    </div>
                 )}
             </main>
         </div>

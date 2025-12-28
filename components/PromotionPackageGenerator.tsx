@@ -1,11 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, CheckCircle, XCircle, Sparkles, Lock, Lightbulb, BarChart3, Rocket, ClipboardCopy, Download, Zap, X } from 'lucide-react';
+import { Target, CheckCircle, XCircle, Sparkles, Lock, Lightbulb, BarChart3, Rocket, ClipboardCopy, Download, Zap, X, FileText, History, ChevronDown } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/Loading';
 import { useToast } from '@/components/ui/Toast';
+
+interface SavedPackage {
+    id: string;
+    content: string;
+    decisions_count: number;
+    created_at: string;
+}
 
 interface PromotionPackageGeneratorProps {
     decisionCount: number;
@@ -16,11 +25,38 @@ export function PromotionPackageGenerator({ decisionCount }: PromotionPackageGen
     const [generating, setGenerating] = useState(false);
     const [generatedPackage, setGeneratedPackage] = useState<string | null>(null);
     const [error, setError] = useState('');
+    const [savedPackages, setSavedPackages] = useState<SavedPackage[]>([]);
+    const [loadingSaved, setLoadingSaved] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
     const { showToast } = useToast();
+    const printRef = useRef<HTMLDivElement>(null);
+
+    // Fetch saved packages when modal opens
+    useEffect(() => {
+        if (showModal) {
+            fetchSavedPackages();
+        }
+    }, [showModal]);
+
+    const fetchSavedPackages = async () => {
+        setLoadingSaved(true);
+        try {
+            const response = await fetch('/api/promotion-packages');
+            const data = await response.json();
+            if (response.ok) {
+                setSavedPackages(data.packages || []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch saved packages:', err);
+        } finally {
+            setLoadingSaved(false);
+        }
+    };
 
     const handleGenerate = async () => {
         setGenerating(true);
         setError('');
+        setShowHistory(false);
 
         try {
             const session = await fetch('/api/auth/session').then(r => r.json());
@@ -38,6 +74,8 @@ export function PromotionPackageGenerator({ decisionCount }: PromotionPackageGen
             }
 
             setGeneratedPackage(data.package);
+            // Refresh saved packages list
+            fetchSavedPackages();
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to generate package';
             setError(message);
@@ -53,28 +91,161 @@ export function PromotionPackageGenerator({ decisionCount }: PromotionPackageGen
         }
     };
 
-    const handleDownload = () => {
+    const handleDownloadMarkdown = () => {
         if (generatedPackage) {
-            const blob = new Blob([generatedPackage], { type: 'text/plain' });
+            const blob = new Blob([generatedPackage], { type: 'text/markdown' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `promotion-package-${new Date().toISOString().split('T')[0]}.txt`;
+            a.download = `promotion-package-${new Date().toISOString().split('T')[0]}.md`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('Downloaded successfully!', 'success');
+            showToast('Downloaded Markdown file!', 'success');
         }
     };
 
-    const canGenerate = decisionCount >= 10;
+    const handleDownloadPDF = async () => {
+        if (generatedPackage) {
+            showToast('Generating PDF...', 'info');
+
+            try {
+                // Dynamically import jsPDF to avoid SSR issues
+                const { jsPDF } = await import('jspdf');
+
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Set up fonts and colors
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const margin = 20;
+                const maxWidth = pageWidth - (margin * 2);
+                let yPosition = margin;
+
+                // Header
+                doc.setFontSize(22);
+                doc.setTextColor(15, 23, 42); // slate-900
+                doc.text('Professional Self-Review', pageWidth / 2, yPosition, { align: 'center' });
+                yPosition += 8;
+
+                // Date
+                doc.setFontSize(11);
+                doc.setTextColor(100, 116, 139); // slate-500
+                const dateStr = `Generated by Career Black Box • ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+                doc.text(dateStr, pageWidth / 2, yPosition, { align: 'center' });
+                yPosition += 5;
+
+                // Header line
+                doc.setDrawColor(99, 102, 241); // indigo-500
+                doc.setLineWidth(0.5);
+                doc.line(margin, yPosition, pageWidth - margin, yPosition);
+                yPosition += 12;
+
+                // Process markdown content - convert to plain text with formatting
+                const lines = generatedPackage.split('\n');
+
+                for (const line of lines) {
+                    // Check if we need a new page
+                    if (yPosition > pageHeight - 30) {
+                        doc.addPage();
+                        yPosition = margin;
+                    }
+
+                    const trimmedLine = line.trim();
+
+                    // Skip empty lines but add some spacing
+                    if (!trimmedLine) {
+                        yPosition += 4;
+                        continue;
+                    }
+
+                    // Handle headers
+                    if (trimmedLine.startsWith('### ')) {
+                        yPosition += 4;
+                        doc.setFontSize(13);
+                        doc.setTextColor(51, 65, 85); // slate-700
+                        const text = trimmedLine.replace('### ', '');
+                        const splitText = doc.splitTextToSize(text, maxWidth);
+                        doc.text(splitText, margin, yPosition);
+                        yPosition += splitText.length * 6 + 2;
+                    } else if (trimmedLine.startsWith('## ')) {
+                        yPosition += 6;
+                        doc.setFontSize(15);
+                        doc.setTextColor(30, 41, 59); // slate-800
+                        const text = trimmedLine.replace('## ', '');
+                        const splitText = doc.splitTextToSize(text, maxWidth);
+                        doc.text(splitText, margin, yPosition);
+                        yPosition += splitText.length * 7 + 4;
+                        // Add underline
+                        doc.setDrawColor(226, 232, 240); // slate-200
+                        doc.setLineWidth(0.3);
+                        doc.line(margin, yPosition - 2, pageWidth - margin, yPosition - 2);
+                    } else if (trimmedLine.startsWith('# ')) {
+                        yPosition += 8;
+                        doc.setFontSize(18);
+                        doc.setTextColor(15, 23, 42); // slate-900
+                        const text = trimmedLine.replace('# ', '');
+                        const splitText = doc.splitTextToSize(text, maxWidth);
+                        doc.text(splitText, margin, yPosition);
+                        yPosition += splitText.length * 8 + 4;
+                    } else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+                        // List items
+                        doc.setFontSize(11);
+                        doc.setTextColor(71, 85, 105); // slate-600
+                        const text = '• ' + trimmedLine.substring(2).replace(/\*\*/g, '').replace(/\*/g, '');
+                        const splitText = doc.splitTextToSize(text, maxWidth - 5);
+                        doc.text(splitText, margin + 5, yPosition);
+                        yPosition += splitText.length * 5 + 1;
+                    } else if (trimmedLine.startsWith('---')) {
+                        // Horizontal rule
+                        yPosition += 4;
+                        doc.setDrawColor(226, 232, 240);
+                        doc.setLineWidth(0.2);
+                        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+                        yPosition += 6;
+                    } else {
+                        // Regular paragraph
+                        doc.setFontSize(11);
+                        doc.setTextColor(71, 85, 105); // slate-600
+                        // Remove markdown formatting
+                        const text = trimmedLine.replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '');
+                        const splitText = doc.splitTextToSize(text, maxWidth);
+                        doc.text(splitText, margin, yPosition);
+                        yPosition += splitText.length * 5 + 2;
+                    }
+                }
+
+                // Footer
+                const footerY = pageHeight - 15;
+                doc.setFontSize(9);
+                doc.setTextColor(148, 163, 184); // slate-400
+                doc.setDrawColor(226, 232, 240);
+                doc.setLineWidth(0.2);
+                doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+                doc.text('Generated by Career Black Box - Your Professional Flight Recorder', pageWidth / 2, footerY, { align: 'center' });
+
+                // Save the PDF
+                doc.save(`promotion-package-${new Date().toISOString().split('T')[0]}.pdf`);
+                showToast('PDF downloaded successfully!', 'success');
+            } catch (err) {
+                console.error('PDF generation error:', err);
+                showToast('Failed to generate PDF. Try copying as markdown instead.', 'error');
+            }
+        }
+    };
+
+    const canGenerate = decisionCount >= 3;
 
     return (
         <>
             <motion.div
                 whileHover={{ scale: 1.01 }}
-                className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl p-6 text-white shadow-lg border border-white/10"
+                className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl p-6 text-white shadow-lg border border-white/5"
             >
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -98,7 +269,7 @@ export function PromotionPackageGenerator({ decisionCount }: PromotionPackageGen
                                 ) : (
                                     <>
                                         <XCircle className="w-4 h-4 text-red-300" />
-                                        Need {10 - decisionCount} more decisions
+                                        Need {3 - decisionCount} more decisions
                                     </>
                                 )}
                             </div>
@@ -120,7 +291,7 @@ export function PromotionPackageGenerator({ decisionCount }: PromotionPackageGen
                             </>
                         ) : (
                             <>
-                                <Lock className="w-4 h-4 mr-2" /> Need 10+ Decisions
+                                <Lock className="w-4 h-4 mr-2" /> Need 3+ Decisions
                             </>
                         )}
                     </Button>
@@ -220,6 +391,66 @@ export function PromotionPackageGenerator({ decisionCount }: PromotionPackageGen
                                                 <Rocket className="w-4 h-4 mr-2" /> Generate Now (Free)
                                             </Button>
                                         </motion.div>
+
+                                        {/* Saved Packages History */}
+                                        {savedPackages.length > 0 && (
+                                            <div className="mt-6 border-t border-white/10 pt-4">
+                                                <button
+                                                    onClick={() => setShowHistory(!showHistory)}
+                                                    className="flex items-center justify-between w-full text-left text-slate-300 hover:text-white transition-colors"
+                                                >
+                                                    <span className="flex items-center gap-2 font-medium">
+                                                        <History className="w-4 h-4" />
+                                                        Previous Packages ({savedPackages.length})
+                                                    </span>
+                                                    <ChevronDown className={`w-4 h-4 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+                                                </button>
+
+                                                <AnimatePresence>
+                                                    {showHistory && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: 'auto', opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            className="overflow-hidden"
+                                                        >
+                                                            <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+                                                                {savedPackages.map((pkg) => (
+                                                                    <button
+                                                                        key={pkg.id}
+                                                                        onClick={() => {
+                                                                            setGeneratedPackage(pkg.content);
+                                                                            setShowHistory(false);
+                                                                        }}
+                                                                        className="w-full flex items-center justify-between bg-slate-800/50 hover:bg-slate-700/50 border border-white/5 rounded-lg px-4 py-3 text-left transition-colors"
+                                                                    >
+                                                                        <div>
+                                                                            <p className="text-sm text-white font-medium">
+                                                                                {new Date(pkg.created_at).toLocaleDateString('en-US', {
+                                                                                    year: 'numeric',
+                                                                                    month: 'short',
+                                                                                    day: 'numeric',
+                                                                                })}
+                                                                            </p>
+                                                                            <p className="text-xs text-slate-400">
+                                                                                {pkg.decisions_count} decisions analyzed
+                                                                            </p>
+                                                                        </div>
+                                                                        <FileText className="w-4 h-4 text-slate-400" />
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                        )}
+
+                                        {loadingSaved && (
+                                            <div className="mt-4 flex justify-center">
+                                                <LoadingSpinner size="sm" />
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -237,34 +468,71 @@ export function PromotionPackageGenerator({ decisionCount }: PromotionPackageGen
 
                                 {generatedPackage && (
                                     <div className="space-y-4">
-                                        <div className="bg-slate-800/50 border border-white/5 rounded-lg p-6 max-h-[400px] overflow-y-auto">
-                                            <pre className="whitespace-pre-wrap text-sm text-slate-300 font-sans leading-relaxed">
+                                        {/* GitHub-style markdown preview */}
+                                        <div
+                                            ref={printRef}
+                                            className="bg-slate-800/50 border border-white/5 rounded-lg p-6 max-h-[400px] overflow-y-auto prose prose-invert prose-sm max-w-none
+                                                prose-headings:font-outfit prose-headings:text-white
+                                                prose-h1:text-2xl prose-h1:border-b prose-h1:border-indigo-500/50 prose-h1:pb-2 prose-h1:mb-4
+                                                prose-h2:text-xl prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-2 prose-h2:mt-6
+                                                prose-h3:text-lg prose-h3:text-slate-200 prose-h3:mt-4
+                                                prose-h4:text-base prose-h4:text-slate-300
+                                                prose-p:text-slate-300 prose-p:leading-relaxed
+                                                prose-strong:text-white prose-strong:font-semibold
+                                                prose-em:text-slate-300
+                                                prose-ul:text-slate-300 prose-ol:text-slate-300
+                                                prose-li:my-1 prose-li:marker:text-indigo-400
+                                                prose-blockquote:border-l-indigo-500 prose-blockquote:bg-indigo-500/10 prose-blockquote:not-italic
+                                                prose-code:bg-slate-700 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-indigo-300
+                                                prose-pre:bg-slate-800 prose-pre:border prose-pre:border-white/5
+                                                prose-hr:border-white/10
+                                                prose-table:border prose-table:border-white/10
+                                                prose-th:bg-slate-800 prose-th:border prose-th:border-white/10 prose-th:px-3 prose-th:py-2
+                                                prose-td:border prose-td:border-white/10 prose-td:px-3 prose-td:py-2
+                                            "
+                                        >
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                                 {generatedPackage}
-                                            </pre>
+                                            </ReactMarkdown>
                                         </div>
 
-                                        <div className="flex gap-4">
-                                            <motion.div className="flex-1" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                                        {/* Action Buttons */}
+                                        <div className="flex flex-wrap gap-3">
+                                            <motion.div className="flex-1 min-w-[140px]" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
                                                 <Button
                                                     onClick={handleCopy}
                                                     variant="secondary"
                                                     size="lg"
                                                     className="w-full"
                                                 >
-                                                    <ClipboardCopy className="w-4 h-4 mr-2" /> Copy to Clipboard
+                                                    <ClipboardCopy className="w-4 h-4 mr-2" /> Copy
                                                 </Button>
                                             </motion.div>
-                                            <motion.div className="flex-1" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                                            <motion.div className="flex-1 min-w-[140px]" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
                                                 <Button
-                                                    onClick={handleDownload}
+                                                    onClick={handleDownloadMarkdown}
+                                                    variant="outline"
+                                                    size="lg"
+                                                    className="w-full border-white/10 text-slate-300 hover:bg-white/5"
+                                                >
+                                                    <FileText className="w-4 h-4 mr-2" /> .md
+                                                </Button>
+                                            </motion.div>
+                                            <motion.div className="flex-1 min-w-[140px]" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                                                <Button
+                                                    onClick={handleDownloadPDF}
                                                     variant="primary"
                                                     size="lg"
                                                     className="w-full"
                                                 >
-                                                    <Download className="w-4 h-4 mr-2" /> Download as .txt
+                                                    <Download className="w-4 h-4 mr-2" /> PDF
                                                 </Button>
                                             </motion.div>
                                         </div>
+
+                                        <p className="text-xs text-slate-500 text-center">
+                                            💡 Tip: Use Ctrl+P or the PDF button to save as PDF with professional formatting
+                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -275,3 +543,4 @@ export function PromotionPackageGenerator({ decisionCount }: PromotionPackageGen
         </>
     );
 }
+

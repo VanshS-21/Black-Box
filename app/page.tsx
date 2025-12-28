@@ -24,15 +24,20 @@ import {
   X,
   Users,
   Building2,
-  Chrome
+  Chrome,
+  LayoutDashboard
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Floating } from '@/components/ui/Floating';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/FadeIn';
+import { useAuth } from '@/lib/auth/context';
+import { LandingQuickReframe } from '@/components/LandingQuickReframe';
 
 export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -164,6 +169,7 @@ export default function HomePage() {
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">Features</a>
               <a href="#how-it-works" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">How it Works</a>
+              <a href="#templates" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">Templates</a>
               <a href="#for-teams" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">For Teams</a>
               <a href="#pricing" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">Pricing</a>
               <a href="#faq" className="text-slate-400 hover:text-white transition-colors text-sm font-medium">FAQ</a>
@@ -178,16 +184,29 @@ export default function HomePage() {
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <Link href="/auth/login" className="hidden sm:block">
-                <Button variant="ghost" className="text-slate-300 hover:text-white hover:bg-white/5">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/auth/signup" className="hidden sm:block">
-                <Button className="bg-white text-slate-900 hover:bg-slate-100 font-semibold px-5 shadow-xl shadow-white/10 transition-all hover:scale-105 active:scale-95">
-                  Get Started Free
-                </Button>
-              </Link>
+              {loading ? (
+                <div className="hidden sm:block w-24 h-10 bg-slate-800/50 animate-pulse rounded-lg" />
+              ) : user ? (
+                <Link href="/dashboard" className="hidden sm:block">
+                  <Button className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-500 hover:to-violet-500 font-semibold px-5 shadow-xl shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95">
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/auth/login" className="hidden sm:block">
+                    <Button variant="ghost" className="text-slate-300 hover:text-white hover:bg-white/5">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/auth/signup" className="hidden sm:block">
+                    <Button className="bg-white text-slate-900 hover:bg-slate-100 font-semibold px-5 shadow-xl shadow-white/10 transition-all hover:scale-105 active:scale-95">
+                      Get Started Free
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
@@ -203,21 +222,33 @@ export default function HomePage() {
                 <div className="flex flex-col gap-2">
                   <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">Features</a>
                   <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">How it Works</a>
+                  <a href="#templates" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">Templates</a>
                   <a href="#for-teams" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">For Teams</a>
                   <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">Pricing</a>
                   <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white transition-colors text-sm font-medium py-2">FAQ</a>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <Link href="/auth/login" className="flex-1">
-                    <Button variant="ghost" className="w-full text-slate-300 hover:text-white hover:bg-white/5">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/auth/signup" className="flex-1">
-                    <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 font-semibold">
-                      Get Started
-                    </Button>
-                  </Link>
+                  {user ? (
+                    <Link href="/dashboard" className="flex-1">
+                      <Button className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold">
+                        <LayoutDashboard className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link href="/auth/login" className="flex-1">
+                        <Button variant="ghost" className="w-full text-slate-300 hover:text-white hover:bg-white/5">
+                          Sign In
+                        </Button>
+                      </Link>
+                      <Link href="/auth/signup" className="flex-1">
+                        <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 font-semibold">
+                          Get Started
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -226,15 +257,17 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 relative">
+      <section className="pt-24 pb-16 relative">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Beta Badge */}
           <FadeIn delay={0.1}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20 text-violet-300 text-sm font-medium backdrop-blur-sm mb-8">
-              <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
-              <PartyPopper className="w-4 h-4" />
-              <span>Now in Public Beta — Free for Early Users</span>
-            </div>
+            <Floating y={5} duration={3}>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20 text-violet-300 text-sm font-medium backdrop-blur-sm mb-8">
+                <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+                <PartyPopper className="w-4 h-4" />
+                <span>Now in Public Beta — Free for Early Users</span>
+              </div>
+            </Floating>
           </FadeIn>
 
           {/* Main Headline */}
@@ -268,9 +301,9 @@ export default function HomePage() {
                   </Button>
                 </motion.div>
               </Link>
-              <a href="#demo">
+              <a href="#try-it">
                 <Button variant="outline" size="lg" className="border-white/10 text-white hover:bg-white/5 text-lg px-10 py-7 h-auto rounded-2xl backdrop-blur-sm">
-                  See Demo
+                  Try it Now
                 </Button>
               </a>
             </div>
@@ -296,89 +329,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Demo Card Section */}
-      <section className="pb-32 relative" id="demo">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Try It Now - Quick Reframe (Lead Magnet #1) */}
+      <section className="pb-24 relative" id="try-it">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Glow effect */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[600px] h-[400px] bg-gradient-to-r from-indigo-500 to-fuchsia-500 blur-[100px] opacity-15" />
+            <div className="w-[600px] h-[400px] bg-gradient-to-r from-violet-500 to-fuchsia-500 blur-[100px] opacity-15" />
           </div>
 
           <FadeIn>
-            <div className="relative bg-slate-900/70 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl overflow-hidden">
-              {/* Window Chrome */}
-              <div className="flex items-center gap-2 mb-8 pb-6 border-b border-white/5">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500/30 border border-red-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/30 border border-yellow-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/30 border border-green-500/50" />
-                </div>
-                <div className="ml-4 px-4 py-1.5 bg-slate-800/50 rounded-lg text-xs font-mono text-slate-500 border border-white/5">
-                  career-black-box.app/new
-                </div>
-                <div className="ml-auto flex items-center gap-2 text-xs font-medium text-violet-400">
-                  <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
-                  AI Ready
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Input Side */}
-                <div>
-                  <div className="text-sm font-medium text-slate-400 mb-3 uppercase tracking-wider">Your Brain Dump</div>
-                  <div className="font-mono text-slate-300 text-sm leading-relaxed p-5 bg-black/30 rounded-xl border border-white/5 min-h-[200px]">
-                    <p className="mb-3">
-                      <span className="text-indigo-400">{">"}</span> Decided to switch from REST to GraphQL for the new mobile app API.
-                    </p>
-                    <p className="mb-3">
-                      <span className="text-indigo-400">{">"}</span> REST was causing too many round trips - 8 requests just to load the home screen.
-                    </p>
-                    <p className="mb-3">
-                      <span className="text-indigo-400">{">"}</span> GraphQL lets us batch everything. Team needs to learn it but worth it.
-                    </p>
-                    <p>
-                      <span className="text-indigo-400">{">"}</span> Biggest risk is the learning curve - we have 2 weeks to ship.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Output Side */}
-                <div>
-                  <div className="text-sm font-medium text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-violet-400" /> AI-Structured Output
-                  </div>
-                  <div className="bg-indigo-950/40 border border-indigo-500/20 rounded-xl p-5 min-h-[200px]">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-500 to-violet-500 rounded-l-xl" />
-
-                    <h3 className="text-lg font-bold text-white mb-4 font-outfit">
-                      REST → GraphQL Migration for Mobile API
-                    </h3>
-
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <span className="text-slate-500 text-xs uppercase">Decision</span>
-                        <p className="text-slate-300">Adopt GraphQL to reduce API round trips from 8 to 1</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-slate-500 text-xs uppercase">Impact</span>
-                          <p className="text-emerald-400 font-medium">87% fewer requests</p>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 text-xs uppercase">Confidence</span>
-                          <p className="text-indigo-300 font-medium">8/10</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <span className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded text-xs">architecture</span>
-                        <span className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded text-xs">api</span>
-                        <span className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded text-xs">mobile</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="text-center mb-8">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 font-outfit">
+                Try it now —{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">no signup required</span>
+              </h2>
+              <p className="text-slate-400 text-lg">Paste any update and see it transformed instantly</p>
             </div>
+          </FadeIn>
+
+          <FadeIn delay={0.1}>
+            <LandingQuickReframe />
           </FadeIn>
         </div>
       </section>
@@ -431,7 +401,7 @@ export default function HomePage() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400"> institutional knowledge</span>
               </h2>
               <p className="text-xl text-slate-400 max-w-3xl mx-auto">
-                When engineers leave, their context leaves with them. Career Black Box keeps your team's architectural history alive.
+                When engineers leave, their context leaves with them. Career Black Box keeps your team&apos;s architectural history alive.
               </p>
             </div>
           </FadeIn>
@@ -447,7 +417,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3 font-outfit">Team-Wide Decision History</h3>
                 <p className="text-slate-400 leading-relaxed mb-4">
-                  "Why did we choose Kafka over RabbitMQ?" Stop asking Slack—it's documented with full context.
+                  &quot;Why did we choose Kafka over RabbitMQ?&quot; Stop asking Slack—it&apos;s documented with full context.
                 </p>
                 <div className="text-emerald-400 text-sm font-medium">
                   → Survives employee turnover
@@ -465,7 +435,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3 font-outfit">Performance Reviews with Data</h3>
                 <p className="text-slate-400 leading-relaxed mb-4">
-                  No more "I think they did something good." Generate evidence-backed reviews from real decisions.
+                  No more &quot;I think they did something good.&quot; Generate evidence-backed reviews from real decisions.
                 </p>
                 <div className="text-emerald-400 text-sm font-medium">
                   → Better calibration, happier engineers
@@ -503,6 +473,89 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Templates Section */}
+      <section className="py-24 border-y border-white/5 bg-black/20" id="templates">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FadeIn>
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20 text-violet-300 text-sm font-medium backdrop-blur-sm mb-6">
+                <Sparkles className="w-4 h-4" />
+                <span>AI-Powered Templates</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 font-outfit">
+                Start with a
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400"> template</span>
+              </h2>
+              <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+                Document architectural decisions, incident postmortems, and tech debt with AI-structured templates.
+              </p>
+            </div>
+          </FadeIn>
+
+          <StaggerContainer className="grid md:grid-cols-3 gap-8">
+            <StaggerItem>
+              <Link href="/templates/adr">
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  className="bg-gradient-to-br from-blue-950/50 to-indigo-950/50 backdrop-blur-md rounded-2xl p-8 border border-blue-500/20 h-full cursor-pointer group"
+                >
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                    <Package className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3 font-outfit">Architecture Decision Records</h3>
+                  <p className="text-slate-400 leading-relaxed mb-4">
+                    Document significant architectural choices with structured context, options, and trade-offs.
+                  </p>
+                  <div className="text-blue-400 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                    View ADR Template <ArrowRight className="w-4 h-4" />
+                  </div>
+                </motion.div>
+              </Link>
+            </StaggerItem>
+
+            <StaggerItem>
+              <Link href="/templates/postmortem">
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  className="bg-gradient-to-br from-rose-950/50 to-orange-950/50 backdrop-blur-md rounded-2xl p-8 border border-rose-500/20 h-full cursor-pointer group"
+                >
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                    <Target className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3 font-outfit">Incident Postmortems</h3>
+                  <p className="text-slate-400 leading-relaxed mb-4">
+                    Turn crisis management into career wins. Document incidents that showcase your problem-solving.
+                  </p>
+                  <div className="text-rose-400 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                    View Postmortem Template <ArrowRight className="w-4 h-4" />
+                  </div>
+                </motion.div>
+              </Link>
+            </StaggerItem>
+
+            <StaggerItem>
+              <Link href="/templates/tech-debt">
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  className="bg-gradient-to-br from-amber-950/50 to-yellow-950/50 backdrop-blur-md rounded-2xl p-8 border border-amber-500/20 h-full cursor-pointer group"
+                >
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                    <BarChart3 className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3 font-outfit">Tech Debt Documentation</h3>
+                  <p className="text-slate-400 leading-relaxed mb-4">
+                    Log shortcuts consciously with context, timelines, and payback plans. Never lose track of debt.
+                  </p>
+                  <div className="text-amber-400 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                    View Tech Debt Template <ArrowRight className="w-4 h-4" />
+                  </div>
+                </motion.div>
+              </Link>
+            </StaggerItem>
+          </StaggerContainer>
+        </div>
+      </section>
+
       {/* How It Works */}
       <section className="py-24 border-y border-white/5 bg-black/20" id="how-it-works">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -524,7 +577,14 @@ export default function HomePage() {
                 <div className="relative">
                   {/* Connector Line */}
                   {idx < steps.length - 1 && (
-                    <div className="hidden md:block absolute top-16 left-[60%] w-[80%] h-[2px] bg-gradient-to-r from-violet-500/50 to-transparent" />
+                    <motion.div
+                      initial={{ scaleX: 0 }}
+                      whileInView={{ scaleX: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.8, delay: 0.5 }}
+                      style={{ originX: 0 }}
+                      className="hidden md:block absolute top-16 left-[60%] w-[80%] h-[2px] bg-gradient-to-r from-violet-500/50 to-transparent"
+                    />
                   )}
 
                   <motion.div
@@ -562,7 +622,7 @@ export default function HomePage() {
                 Be an Early Adopter
               </h2>
               <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
-                We're actively building Career Black Box with feedback from engineers like you.
+                We&apos;re actively building Career Black Box with feedback from engineers like you.
                 Join our beta to get free access to all features and help shape the product.
               </p>
               <div className="grid md:grid-cols-3 gap-6">
@@ -595,7 +655,7 @@ export default function HomePage() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-pink-400"> Experience</span>
               </h2>
               <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
-                We'd love to hear how Career Black Box is helping you. Your feedback shapes our product.
+                We&apos;d love to hear how Career Black Box is helping you. Your feedback shapes our product.
               </p>
               <a href="mailto:feedback@careerblackbox.com" className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-medium transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -617,22 +677,22 @@ export default function HomePage() {
                 Simple, transparent pricing
               </h2>
               <p className="text-xl text-slate-400">
-                Start free. Upgrade when you're ready.
+                Start free. Upgrade when you&apos;re ready.
               </p>
             </div>
           </FadeIn>
 
-          <StaggerContainer className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <StaggerContainer className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {/* Free Tier */}
             <StaggerItem>
-              <div className="bg-slate-900/40 backdrop-blur rounded-2xl p-8 border border-white/10 h-full">
+              <div className="bg-slate-900/40 backdrop-blur rounded-2xl p-6 border border-white/10 h-full">
                 <div className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Free Forever</div>
-                <div className="text-4xl font-bold text-white mb-6 font-outfit">$0<span className="text-lg text-slate-500 font-normal">/month</span></div>
+                <div className="text-3xl font-bold text-white mb-4 font-outfit">₹0<span className="text-lg text-slate-500 font-normal">/month</span></div>
 
-                <ul className="space-y-4 mb-8">
+                <ul className="space-y-3 mb-6 text-sm">
                   {['Unlimited decisions', 'Full search & tagging', 'Export to JSON', 'Lock & preserve', 'Print to PDF'].map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-3 text-slate-300">
-                      <Check className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                    <li key={idx} className="flex items-center gap-2 text-slate-300">
+                      <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       {feature}
                     </li>
                   ))}
@@ -648,23 +708,23 @@ export default function HomePage() {
 
             {/* Pro Tier */}
             <StaggerItem>
-              <div className="bg-gradient-to-b from-indigo-950/80 to-violet-950/80 backdrop-blur rounded-2xl p-8 border border-indigo-500/30 relative overflow-hidden h-full">
+              <div className="bg-gradient-to-b from-indigo-950/80 to-violet-950/80 backdrop-blur rounded-2xl p-6 border border-indigo-500/30 relative overflow-hidden h-full">
                 {/* Popular Badge */}
-                <div className="absolute top-0 right-0 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-bold px-4 py-1 rounded-bl-xl">
+                <div className="absolute top-0 right-0 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">
                   BETA: FREE
                 </div>
 
                 <div className="text-sm font-medium text-indigo-300 uppercase tracking-wider mb-2">Pro</div>
-                <div className="text-4xl font-bold text-white mb-1 font-outfit">
-                  <span className="line-through text-slate-500 text-2xl">₹500</span> ₹0
+                <div className="text-3xl font-bold text-white mb-1 font-outfit">
+                  <span className="line-through text-slate-500 text-xl">₹500</span> ₹0
                   <span className="text-lg text-slate-400 font-normal">/month</span>
                 </div>
-                <div className="text-sm text-indigo-300 mb-6">Free during beta!</div>
+                <div className="text-sm text-indigo-300 mb-4">Free during beta!</div>
 
-                <ul className="space-y-4 mb-8">
-                  {['Everything in Free', 'AI-powered structuring', 'Promotion package generator', 'Advanced analytics', 'Priority support'].map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-3 text-slate-200">
-                      <Check className="w-5 h-5 text-indigo-400 flex-shrink-0" />
+                <ul className="space-y-3 mb-6 text-sm">
+                  {['Everything in Free', 'AI-powered structuring', 'Promotion packages', 'Weekly updates', 'Priority support'].map((feature, idx) => (
+                    <li key={idx} className="flex items-center gap-2 text-slate-200">
+                      <Check className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                       {feature}
                     </li>
                   ))}
@@ -675,6 +735,41 @@ export default function HomePage() {
                     Start Free Trial <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
+              </div>
+            </StaggerItem>
+
+            {/* Team Tier - NEW */}
+            <StaggerItem>
+              <div className="bg-gradient-to-b from-emerald-950/80 to-teal-950/80 backdrop-blur rounded-2xl p-6 border border-emerald-500/30 relative overflow-hidden h-full">
+                {/* Team Badge */}
+                <div className="absolute top-0 right-0 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">
+                  FOR MANAGERS
+                </div>
+
+                <div className="text-sm font-medium text-emerald-300 uppercase tracking-wider mb-2">Team</div>
+                <div className="text-3xl font-bold text-white mb-1 font-outfit">
+                  ₹5,000
+                  <span className="text-lg text-slate-400 font-normal">/month</span>
+                </div>
+                <div className="text-sm text-emerald-300 mb-4">
+                  <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-xs font-medium mr-2">EARLY ADOPTER</span>
+                  5 seats included
+                </div>
+
+                <ul className="space-y-3 mb-6 text-sm">
+                  {['Everything in Pro', '5 team members', 'Team Pulse dashboard', 'Manager visibility', 'Shared decisions', 'Priority support'].map((feature, idx) => (
+                    <li key={idx} className="flex items-center gap-2 text-slate-200">
+                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <a href="mailto:teams@careerblackbox.com">
+                  <Button size="lg" className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl shadow-lg shadow-emerald-500/25">
+                    Contact for Teams <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </a>
               </div>
             </StaggerItem>
           </StaggerContainer>
@@ -740,7 +835,7 @@ export default function HomePage() {
               Ready to stop losing credit for your work?
             </h2>
             <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto">
-              Join thousands of engineers who document their decisions and get promoted faster.
+              Join our exclusive beta. Be among the first engineers to turn decisions into promotions.
             </p>
 
             <Link href="/auth/signup">

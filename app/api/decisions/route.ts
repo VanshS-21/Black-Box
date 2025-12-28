@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search')?.slice(0, 200) || '';
         const tags = searchParams.get('tags')?.split(',').filter(Boolean).slice(0, 10) || [];
+        const dateFrom = searchParams.get('date_from');
+        const dateTo = searchParams.get('date_to');
+        const minConfidence = searchParams.get('min_confidence');
 
         // Build query
         let query = supabase
@@ -47,6 +50,25 @@ export async function GET(request: NextRequest) {
         // Apply tag filter
         if (tags.length > 0) {
             query = query.contains('tags', tags);
+        }
+
+        // Apply date range filter
+        if (dateFrom) {
+            query = query.gte('created_at', dateFrom);
+        }
+        if (dateTo) {
+            // Add 1 day to include the full day
+            const toDate = new Date(dateTo);
+            toDate.setDate(toDate.getDate() + 1);
+            query = query.lt('created_at', toDate.toISOString());
+        }
+
+        // Apply confidence filter
+        if (minConfidence) {
+            const minConf = parseInt(minConfidence, 10);
+            if (!isNaN(minConf) && minConf >= 1 && minConf <= 10) {
+                query = query.gte('confidence_level', minConf);
+            }
         }
 
         const { data, error } = await query;
@@ -108,6 +130,7 @@ export async function POST(request: NextRequest) {
                 ai_structured: validatedData.ai_structured || false,
                 source: validatedData.source || 'web',
                 source_url: validatedData.source_url || null,
+                team_id: validatedData.team_id || null,
             })
             .select()
             .single();

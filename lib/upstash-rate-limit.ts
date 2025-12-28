@@ -54,6 +54,7 @@ function getRatelimit(): Ratelimit | null {
 export const RATE_LIMITS = {
     api: { requests: 100, window: '1 m' as const },      // Standard API calls
     ai: { requests: 20, window: '1 m' as const },        // AI endpoints (cost-sensitive)
+    ai_public: { requests: 5, window: '1 d' as const },  // Public AI (anonymous, 5/day per IP)
     export: { requests: 10, window: '1 m' as const },    // Export (infrequent)
     auth: { requests: 10, window: '1 m' as const },      // Auth attempts
     payments: { requests: 5, window: '1 m' as const },   // Payment operations
@@ -68,6 +69,56 @@ interface RateLimitResult {
 }
 
 /**
+ * Simple in-memory rate limiter fallback for when Redis is unavailable
+ * Uses a Map with automatic cleanup every 5 minutes
+ */
+const inMemoryStore = new Map<string, { count: number; resetAt: number }>();
+let lastCleanup = Date.now();
+
+function cleanupInMemoryStore() {
+    const now = Date.now();
+    // Cleanup every 5 minutes
+    if (now - lastCleanup > 5 * 60 * 1000) {
+        for (const [key, value] of inMemoryStore.entries()) {
+            if (value.resetAt < now) {
+                inMemoryStore.delete(key);
+            }
+        }
+        lastCleanup = now;
+    }
+}
+
+function getWindowMs(window: string): number {
+    if (window.endsWith(' m')) return parseInt(window) * 60 * 1000;
+    if (window.endsWith(' d')) return parseInt(window) * 24 * 60 * 60 * 1000;
+    return 60 * 1000; // Default 1 minute
+}
+
+function checkInMemoryRateLimit(key: string, type: RateLimitType): RateLimitResult {
+    cleanupInMemoryStore();
+    const config = RATE_LIMITS[type];
+    const windowMs = getWindowMs(config.window);
+    const now = Date.now();
+
+    const entry = inMemoryStore.get(key);
+
+    if (!entry || entry.resetAt < now) {
+        // First request or window expired
+        inMemoryStore.set(key, { count: 1, resetAt: now + windowMs });
+        return { allowed: true, remaining: config.requests - 1, resetIn: windowMs };
+    }
+
+    if (entry.count >= config.requests) {
+        // Rate limited
+        return { allowed: false, remaining: 0, resetIn: entry.resetAt - now };
+    }
+
+    // Increment count
+    entry.count++;
+    return { allowed: true, remaining: config.requests - entry.count, resetIn: entry.resetAt - now };
+}
+
+/**
  * Check if a request should be rate limited
  * @param identifier - Unique identifier (user ID or IP)
  * @param type - Type of rate limit to apply
@@ -77,18 +128,14 @@ export async function checkRateLimit(
     type: RateLimitType = 'api'
 ): Promise<RateLimitResult> {
     const limiter = getRatelimit();
+    const key = `${type}:${identifier}`;
 
-    // If Upstash not configured, allow all requests
+    // If Upstash not configured, use in-memory fallback
     if (!limiter) {
-        return {
-            allowed: true,
-            remaining: 999,
-            resetIn: 0,
-        };
+        return checkInMemoryRateLimit(key, type);
     }
 
     const config = RATE_LIMITS[type];
-    const key = `${type}:${identifier}`;
 
     try {
         const result = await limiter.limit(key);
@@ -99,13 +146,9 @@ export async function checkRateLimit(
             resetIn: result.reset - Date.now(),
         };
     } catch (error) {
-        console.error('Rate limit check failed:', error);
-        // On error, allow the request (fail open)
-        return {
-            allowed: true,
-            remaining: 999,
-            resetIn: 0,
-        };
+        console.error('Rate limit check failed, using in-memory fallback:', error);
+        // On error, use in-memory fallback instead of allowing all requests
+        return checkInMemoryRateLimit(key, type);
     }
 }
 
