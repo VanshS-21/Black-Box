@@ -162,6 +162,14 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-950 overflow-hidden relative selection:bg-violet-500/30">
+      {/* Skip Navigation Link for Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:bg-indigo-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:outline-none"
+      >
+        Skip to main content
+      </a>
+
       {/* Background Effects */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] bg-indigo-500/20 rounded-full blur-[150px]" />
@@ -271,7 +279,7 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-24 pb-16 relative">
+      <section id="main-content" className="pt-24 pb-16 relative">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Beta Badge */}
           <FadeIn delay={0.1}>

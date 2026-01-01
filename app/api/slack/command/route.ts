@@ -10,6 +10,7 @@ import {
     formatLinkSuccess
 } from '@/lib/slack/utils';
 import { waitUntil } from '@vercel/functions';
+import { logger, generateCorrelationId } from '@/lib/logger';
 
 // Use service role for Slack bot (no user session)
 const supabase = createClient(
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
         const timestamp = request.headers.get('x-slack-request-timestamp') || '';
 
         if (!signingSecret) {
-            console.error('SLACK_SIGNING_SECRET not configured');
+            logger.error('Slack signing secret not configured', { action: 'slack_command' });
             return NextResponse.json(
                 formatSlackError('Slack integration not configured'),
                 { status: 200 }
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (!verifySlackSignature(signingSecret, signature, timestamp, rawBody)) {
-            console.warn('Invalid Slack signature');
+            logger.warn('Invalid Slack signature', { action: 'slack_command', slackTeamId: new URLSearchParams(rawBody).get('team_id') });
             return NextResponse.json(
                 formatSlackError('Invalid request signature'),
                 { status: 200 }
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
         return await handleLogCommand(slackUserId, slackTeamId, args, responseUrl);
 
     } catch (error) {
-        console.error('Slack command error:', error);
+        logger.error('Slack command error', { action: 'slack_command' }, error);
         return NextResponse.json(
             formatSlackError('An unexpected error occurred'),
             { status: 200 }
@@ -114,7 +115,7 @@ async function handleLinkCommand(
         .eq('id', linkRecord.id);
 
     if (updateError) {
-        console.error('Failed to update Slack link:', updateError);
+        logger.error('Failed to update Slack link', { slackUserId, linkCode }, updateError);
         return NextResponse.json(
             formatSlackError('Failed to link account. Please try again.'),
             { status: 200 }
@@ -177,9 +178,9 @@ async function processDecisionAsync(
     responseUrl: string
 ): Promise<void> {
     try {
-        console.log('Starting AI processing for decision...');
+        logger.info('Starting AI processing for decision', { userId, action: 'slack_ai_structure' });
         const structured = await structureDecision(decisionText);
-        console.log('AI processing complete, saving to database...');
+        logger.info('AI processing complete, saving to database', { userId, title: structured.title });
 
         // Save to database
         const { error: saveError } = await supabase
@@ -201,12 +202,12 @@ async function processDecisionAsync(
             });
 
         if (saveError) {
-            console.error('Failed to save decision:', saveError);
+            logger.error('Failed to save decision from Slack', { userId }, saveError);
             await sendSlackResponse(responseUrl, formatSlackError('Failed to save decision. Please try again.'));
             return;
         }
 
-        console.log('Decision saved, sending confirmation to Slack...');
+        logger.info('Decision saved, sending confirmation to Slack', { userId, title: structured.title });
         await sendSlackResponse(
             responseUrl,
             formatDecisionConfirmation(
@@ -215,7 +216,7 @@ async function processDecisionAsync(
             )
         );
     } catch (error) {
-        console.error('AI structuring failed:', error);
+        logger.error('AI structuring failed', { userId, action: 'slack_ai_structure' }, error);
         await sendSlackResponse(responseUrl, formatSlackError('AI processing failed. Please try again.'));
     }
 }
@@ -227,8 +228,8 @@ async function sendSlackResponse(responseUrl: string, payload: object): Promise<
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        console.log('Slack response_url call status:', response.status);
+        logger.info('Slack response_url callback completed', { status: response.status });
     } catch (error) {
-        console.error('Failed to send Slack response:', error);
+        logger.error('Failed to send Slack response', { action: 'slack_callback' }, error);
     }
 }

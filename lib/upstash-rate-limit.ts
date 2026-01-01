@@ -10,6 +10,7 @@
 
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
+import { logger } from '@/lib/logger';
 
 // Lazy initialization to avoid errors if env vars are missing
 let ratelimit: Ratelimit | null = null;
@@ -140,13 +141,23 @@ export async function checkRateLimit(
     try {
         const result = await limiter.limit(key);
 
+        // Log rate limit exhaustion as a security event
+        if (!result.success) {
+            logger.warn('Rate limit exhausted', {
+                identifier,
+                type,
+                remaining: result.remaining,
+                action: 'security_rate_limit'
+            });
+        }
+
         return {
             allowed: result.success,
             remaining: result.remaining,
             resetIn: result.reset - Date.now(),
         };
     } catch (error) {
-        console.error('Rate limit check failed, using in-memory fallback:', error);
+        logger.error('Rate limit check failed, using in-memory fallback', { identifier, type }, error);
         // On error, use in-memory fallback instead of allowing all requests
         return checkInMemoryRateLimit(key, type);
     }

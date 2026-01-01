@@ -186,10 +186,12 @@ export default function DashboardPage() {
                             <Button
                                 onClick={() => setShowFilters(!showFilters)}
                                 variant="ghost"
+                                aria-label={showFilters ? 'Hide filters' : 'Show filters'}
+                                aria-expanded={showFilters}
                                 className={`text-slate-400 hover:text-white ${showFilters ? 'bg-white/10' : ''}`}
                             >
-                                <Filter className="w-4 h-4" />
-                                <ChevronDown className={`w-3 h-3 ml-1 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                                <Filter className="w-4 h-4" aria-hidden="true" />
+                                <ChevronDown className={`w-3 h-3 ml-1 transition-transform ${showFilters ? 'rotate-180' : ''}`} aria-hidden="true" />
                             </Button>
                         </div>
                     </div>
@@ -204,35 +206,39 @@ export default function DashboardPage() {
                         >
                             <div className="flex flex-wrap gap-4 items-end">
                                 <div>
-                                    <label className="block text-xs text-slate-400 mb-1">From Date</label>
+                                    <label htmlFor="filter-date-from" className="block text-xs text-slate-400 mb-1">From Date</label>
                                     <input
+                                        id="filter-date-from"
                                         type="date"
                                         value={dateFrom}
                                         onChange={(e) => setDateFrom(e.target.value)}
-                                        className="px-3 py-2 rounded-lg bg-slate-900 border border-white/10 text-white text-sm focus:border-indigo-500/50 focus:outline-none"
+                                        className="px-3 py-2 rounded-lg bg-slate-900 border border-white/10 text-white text-sm focus:border-indigo-500/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-slate-400 mb-1">To Date</label>
+                                    <label htmlFor="filter-date-to" className="block text-xs text-slate-400 mb-1">To Date</label>
                                     <input
+                                        id="filter-date-to"
                                         type="date"
                                         value={dateTo}
                                         onChange={(e) => setDateTo(e.target.value)}
-                                        className="px-3 py-2 rounded-lg bg-slate-900 border border-white/10 text-white text-sm focus:border-indigo-500/50 focus:outline-none"
+                                        className="px-3 py-2 rounded-lg bg-slate-900 border border-white/10 text-white text-sm focus:border-indigo-500/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-slate-400 mb-1">Min Confidence</label>
+                                    <label htmlFor="filter-min-confidence" className="block text-xs text-slate-400 mb-1">Min Confidence</label>
                                     <div className="flex items-center gap-2">
                                         <input
+                                            id="filter-min-confidence"
                                             type="range"
                                             min="0"
                                             max="10"
                                             value={minConfidence}
                                             onChange={(e) => setMinConfidence(parseInt(e.target.value))}
+                                            aria-valuetext={minConfidence > 0 ? `${minConfidence} or higher` : 'Any'}
                                             className="w-24 accent-indigo-500"
                                         />
-                                        <span className="text-sm text-white w-8">{minConfidence > 0 ? `${minConfidence}+` : 'Any'}</span>
+                                        <span className="text-sm text-white w-8" aria-hidden="true">{minConfidence > 0 ? `${minConfidence}+` : 'Any'}</span>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">

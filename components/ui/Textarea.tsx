@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -8,8 +8,10 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-    ({ className, showCount, maxLength, value, onChange, error, helperText, ...props }, ref) => {
+    ({ className, showCount, maxLength, value, onChange, error, helperText, id, ...props }, ref) => {
         const [charCount, setCharCount] = useState(0);
+        const generatedId = useId();
+        const helperId = `${id || generatedId}-helper`;
 
         useEffect(() => {
             if (typeof value === 'string') {
@@ -26,9 +28,12 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             <div className="w-full">
                 <textarea
                     ref={ref}
+                    id={id}
+                    aria-invalid={error || undefined}
+                    aria-describedby={helperText ? helperId : undefined}
                     className={cn(
                         'flex min-h-[120px] w-full rounded-lg border bg-slate-950/20 px-3 py-2 text-sm text-white resize-y',
-                        'placeholder:text-slate-500',
+                        'placeholder:text-slate-400',
                         'focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200',
                         'disabled:cursor-not-allowed disabled:opacity-50',
                         error
@@ -43,17 +48,21 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
                 />
                 <div className="flex justify-between mt-1">
                     {helperText && (
-                        <p className={cn(
-                            'text-xs',
-                            error ? 'text-red-400' : 'text-slate-500'
-                        )}>
+                        <p
+                            id={helperId}
+                            role={error ? 'alert' : undefined}
+                            className={cn(
+                                'text-xs',
+                                error ? 'text-red-400' : 'text-slate-400'
+                            )}
+                        >
                             {helperText}
                         </p>
                     )}
                     {showCount && (
                         <p className={cn(
                             'text-xs ml-auto',
-                            maxLength && charCount >= maxLength ? 'text-amber-400' : 'text-slate-500'
+                            maxLength && charCount >= maxLength ? 'text-amber-400' : 'text-slate-400'
                         )}>
                             {charCount}{maxLength && ` / ${maxLength}`}
                         </p>

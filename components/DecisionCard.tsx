@@ -21,7 +21,10 @@ export function DecisionCard({ decision }: DecisionCardProps) {
     const isTeamVisible = !!(decision as { team_id?: string }).team_id;
 
     return (
-        <Link href={`/dashboard/decisions/${decision.id}`}>
+        <Link
+            href={`/dashboard/decisions/${decision.id}`}
+            className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 rounded-xl"
+        >
             <motion.div
                 whileHover={{ y: -4 }}
                 whileTap={{ scale: 0.98 }}
