@@ -13,6 +13,15 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // Custom rules
+  {
+    rules: {
+      // Allow unescaped entities like ' in JSX (displays correctly)
+      "react/no-unescaped-entities": "off",
+      // Allow explicit any when needed (use sparingly)
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

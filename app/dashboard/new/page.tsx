@@ -14,7 +14,7 @@ import { StructuredDecision } from '@/lib/ai/gemini';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { useToast } from '@/components/ui/Toast';
 import { TeamVisibilityToggle, TeamModeBorder } from '@/components/TeamVisibilityToggle';
-import { DECISION_TEMPLATES, DecisionTemplate, getTemplateById } from '@/lib/templates/decision-templates';
+import { DECISION_TEMPLATES, getTemplateById } from '@/lib/templates/decision-templates';
 import { DashboardHeader } from '@/components/DashboardHeader';
 
 export default function NewDecisionPage() {
