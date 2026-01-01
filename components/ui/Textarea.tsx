@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useId } from 'react';
+import React, { useId } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -9,18 +9,13 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     ({ className, showCount, maxLength, value, onChange, error, helperText, id, ...props }, ref) => {
-        const [charCount, setCharCount] = useState(0);
         const generatedId = useId();
         const helperId = `${id || generatedId}-helper`;
 
-        useEffect(() => {
-            if (typeof value === 'string') {
-                setCharCount(value.length);
-            }
-        }, [value]);
+        // Compute charCount directly from value to avoid setState-in-effect
+        const charCount = typeof value === 'string' ? value.length : 0;
 
         const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-            setCharCount(e.target.value.length);
             onChange?.(e);
         };
 

@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Additional ignores for generated/external files:
+    "playwright-report/**",
+    "coverage/**",
+    "chrome-extension/**",
+    "load-tests/**",
   ]),
   // Custom rules
   {
